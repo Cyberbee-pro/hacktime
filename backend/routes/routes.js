@@ -31,6 +31,22 @@ router.post('/', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+
+  // GET /api/hackathons/:roomId - Fetch hackathon data for the frontend
+router.get('/:roomId', async (req, res) => {
+  try {
+    const hackathon = await Hackathon.findOne({ roomId: req.params.roomId });
+    
+    if (!hackathon) {
+      return res.status(404).json({ message: "Hackathon not found" });
+    }
+    
+    res.status(200).json(hackathon);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 });
 
 module.exports = router;
