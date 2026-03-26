@@ -5,7 +5,7 @@ First off, thank you for considering contributing to HackClock! This project pow
 ## Tech Stack
 * **Framework:** Next.js (App Router)
 * **Styling:** Tailwind CSS
-* **Database/Real-time:** Firebase (Firestore)
+* **Database/Real-time:** MongoDB (via Mongoose) + Socket.IO
 * **Language:** TypeScript
 
 ## Local Development Setup
