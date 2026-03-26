@@ -34,7 +34,7 @@ app.get('/', (req, res) => {
 
 // Socket.io Real-Time Connection Logic
 io.on('connection', (socket) => {
-  console.log(`🔌 A user connected: ${socket.id}`);
+  console.log(` A user connected: ${socket.id}`);
 
   // When a user joins a specific hackathon room (e.g., /room/AB12CD)
   socket.on('join-room', (roomId) => {
