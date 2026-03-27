@@ -3,7 +3,7 @@
 First off, thank you for considering contributing to HackClock! This project powers our club's hackathon infrastructure, and we appreciate your help in making it better.
 
 ## Tech Stack
-* **Framework:** Next.js (App Router)
+* **Framework:** Next.js (App Router) Express.js
 * **Styling:** Tailwind CSS
 * **Database/Real-time:** MongoDB (via Mongoose) + Socket.IO
 * **Language:** TypeScript

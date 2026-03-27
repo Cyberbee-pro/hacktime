@@ -22,8 +22,8 @@ const io = new Server(server, {
 app.use(cors({ origin: ALLOWED_ORIGIN }));
 app.use(express.json());
 
-// Connect our API Routes!
-app.use('/api/hackathons', require('./routes/routes'));
+// Connect Master API Router
+app.use('/api', require('./routes/index'));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
