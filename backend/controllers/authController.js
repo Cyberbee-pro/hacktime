@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const User = require('../models/userSchema');
 
 const register = async (req, res) => {
   try {
@@ -24,7 +25,6 @@ const login = async (req, res) => {
   }
 };
 
-// NEW: Controller to handle the PUT request
 const updateProfile = async (req, res) => {
   try {
     const { email, name, profilePic } = req.body;
@@ -37,4 +37,18 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, updateProfile };
+const updateActiveRoom = async (req, res) => {
+  try {
+    const { email, roomId } = req.body;
+    const updatedUser = await User.findOneAndUpdate(
+      { email }, 
+      { activeRoomId: roomId || null }, 
+      { new: true }
+    );
+    res.status(200).json({ activeRoomId: updatedUser.activeRoomId });
+  } catch (err) { 
+    res.status(500).json({ error: err.message }); 
+  }
+};
+
+module.exports = { register, login, updateProfile, updateActiveRoom };

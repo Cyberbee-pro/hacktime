@@ -12,7 +12,8 @@ const registerUser = async (name, email, plainTextPassword, profilePic) => {
     name,
     email,
     password: hashedPassword,
-    profilePic: profilePic || '/avatars/preset-1.jpeg' // UPDATED DEFAULT HERE
+    profilePic: profilePic || '/avatars/preset-1.jpeg',
+    activeRoomId: null // Explicitly set to null on creation
   });
 
   return await newUser.save();
@@ -25,12 +26,14 @@ const verifyLogin = async (email, plainTextPassword) => {
   const isMatch = await bcrypt.compare(plainTextPassword, user.password);
   if (!isMatch) throw new Error('Invalid credentials.');
 
+  // Return the full safe object including the activeRoomId
   return {
     id: user._id,
     name: user.name,
     email: user.email,
     profilePic: user.profilePic,
-    role: user.role
+    role: user.role,
+    activeRoomId: user.activeRoomId 
   };
 };
 

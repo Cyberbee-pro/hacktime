@@ -1,59 +1,33 @@
+require('dotenv').config();
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
+const routes = require('./routes/index');
 
 const app = express();
-const server = http.createServer(app); 
 
-// Allow Next.js frontend to talk to this server
-const ALLOWED_ORIGIN = process.env.FRONTEND_URL || "http://localhost:3000";
+// Increase payload limit to 50mb to allow Base64 Image uploads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-const io = new Server(server, {
-  cors: {
-    origin: ALLOWED_ORIGIN,
-    methods: ["GET", "POST"]
-  }
-});
+app.use(cors());
 
-// Middleware
-app.use(cors({ origin: ALLOWED_ORIGIN }));
-app.use(express.json());
+// Connect Master Router
+app.use('/api', routes);
 
-// Connect Master API Router
-app.use('/api', require('./routes/index'));
+// Connect directly to your existing MongoDB Cluster via .env
+const mongoURI = process.env.MONGODB_URI;
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log(' Connected to MongoDB'))
-  .catch((err) => console.error(' MongoDB connection error:', err));
+if (!mongoURI) {
+  console.error("FATAL FAULT: MONGODB_URI is missing from your .env file!");
+  process.exit(1);
+}
 
-// Basic Ping Route
-app.get('/', (req, res) => {
-  res.send('HackClock API is running');
-});
-
-// Socket.io Real-Time Engine
-io.on('connection', (socket) => {
-  console.log(` A user connected: ${socket.id}`);
-
-  socket.on('join-room', (roomId) => {
-    socket.join(roomId);
-    console.log(`User ${socket.id} joined room: ${roomId}`);
-  });
-
-  socket.on('timer-update', (data) => {
-    socket.to(data.roomId).emit('sync-timer', data);
-  });
-
-  socket.on('disconnect', () => {
-    console.log(` User disconnected: ${socket.id}`);
-  });
-});
+mongoose.connect(mongoURI)
+  .then(() => console.log('MongoDB Secure Cluster Connection Established'))
+  .catch(err => console.error('MongoDB Cluster Connection Error:', err));
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(` Server running on port ${PORT}`);
+app.listen(PORT, () => {
+  console.log(`Core Backend Engine Online: Port ${PORT}`);
 });
