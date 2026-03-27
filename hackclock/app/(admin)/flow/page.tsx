@@ -1,220 +1,145 @@
 "use client";
 
 import { useState } from 'react';
-import { Plus, Trash2, Rocket, Copy, CheckCircle2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Network, Plus, Trash2, TerminalSquare } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 export default function FlowPage() {
-  const [name, setName] = useState("GitCity Global Hackathon 2026");
-  const [accentColor, setAccentColor] = useState("#4493F8");
-  const [phases, setPhases] = useState([
-    { name: "Kickoff", durationMinutes: 45, autoTransition: true },
-    { name: "Ideation", durationMinutes: 120, autoTransition: false }
-  ]);
+  const router = useRouter();
+  const { data: session } = useSession();
   
+  const [eventName, setEventName] = useState('');
+  const [phases, setPhases] = useState([
+    { id: 1, name: 'Registration & Setup', durationMinutes: 60, autoTransition: false },
+    { id: 2, name: 'Core Hacking Phase', durationMinutes: 720, autoTransition: false },
+  ]);
   const [isDeploying, setIsDeploying] = useState(false);
-  const [deployedData, setDeployedData] = useState<any>(null);
-  const [copied, setCopied] = useState("");
 
-  const handleAddPhase = () => {
-    setPhases([...phases, { name: "New Phase", durationMinutes: 60, autoTransition: false }]);
+  const addPhase = () => {
+    const newId = phases.length > 0 ? Math.max(...phases.map(p => p.id)) + 1 : 1;
+    setPhases([...phases, { id: newId, name: 'New Phase', durationMinutes: 60, autoTransition: false }]);
   };
 
-  const handleRemovePhase = (index: number) => {
-    setPhases(phases.filter((_, i) => i !== index));
+  const removePhase = (id: number) => {
+    setPhases(phases.filter(p => p.id !== id));
   };
 
-  const handlePhaseChange = (index: number, field: string, value: any) => {
-    const newPhases = [...phases];
-    newPhases[index] = { ...newPhases[index], [field]: value };
-    setPhases(newPhases);
+  const updatePhase = (id: number, field: string, value: string | number | boolean) => {
+    setPhases(phases.map(p => p.id === id ? { ...p, [field]: value } : p));
   };
 
   const handleDeploy = async () => {
+    if (!eventName.trim()) return alert("Event Name is required.");
     setIsDeploying(true);
+
     try {
-      const response = await fetch("http://localhost:5000/api/hackathons", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          phases,
-          branding: { accentColor }
-        })
-      });
+      const payload = {
+        name: eventName,
+        organizerSecret: session?.user?.email || 'local_admin', // Used for socket auth later
+        phases: phases
+      };
       
-      const data = await response.json();
-      setDeployedData(data);
+      const res = await fetch('http://localhost:5000/api/hackathons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      
+      if (res.ok && data.roomId) {
+        router.push(`/room/${data.roomId}/clock`);
+      } else {
+        throw new Error(data.error || "Deployment failed");
+      }
     } catch (error) {
       console.error("Failed to deploy:", error);
-      alert("Failed to connect to backend. Is your Node server running?");
-    }
-    setIsDeploying(false);
-  };
-
-  const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(type);
-    setTimeout(() => setCopied(""), 2000);
+      alert("Deployment failed. Ensure backend is running.");
+      setIsDeploying(false);
+    } 
   };
 
   return (
-    <div className="max-w-5xl mx-auto pb-12">
+    <div className="max-w-4xl mx-auto pb-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Flow Creation & Setup</h1>
-        <p className="text-[#8B949E]">Engineer your hackathon's temporal architecture and visual identity for your club events.</p>
+        <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+          <Network className="text-[#4493F8]" /> Deploy Flow
+        </h1>
+        <p className="text-[#8B949E]">Architect your hackathon timeline and generate a secure Room ID for participants.</p>
       </div>
 
-      <div className="flex gap-6">
-        {/* LEFT COLUMN: Form Inputs */}
-        <div className="flex-1 flex flex-col gap-6">
-          
-          {/* Global Parameters */}
-          <div className="bg-[#161B22] border border-[#30363D] rounded-lg p-6">
-            <h3 className="text-[#4493F8] text-xs font-bold tracking-widest uppercase mb-4 flex items-center gap-2">
-              <span className="w-4 h-4 border-t-2 border-l-2 border-[#4493F8]"></span> Global Parameters
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs text-[#8B949E] font-medium mb-1 uppercase tracking-wider">Hackathon Name</label>
-                <input 
-                  type="text" 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-[#0D1117] border border-[#30363D] rounded p-3 text-white focus:outline-none focus:border-[#4493F8] transition-colors"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Phase Sequencing */}
-          <div className="bg-[#161B22] border border-[#30363D] rounded-lg p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-[#4493F8] text-xs font-bold tracking-widest uppercase flex items-center gap-2">
-                <span className="w-4 h-4 border-t-2 border-l-2 border-[#4493F8]"></span> Phase Sequencing
-              </h3>
-              <button onClick={handleAddPhase} className="text-xs text-[#8B949E] hover:text-white flex items-center gap-1 transition-colors">
-                <Plus size={14} /> ADD CUSTOM PHASE
-              </button>
-            </div>
-            
-            <div className="space-y-3">
-              {phases.map((phase, index) => (
-                <div key={index} className="flex items-center gap-4 bg-[#0D1117] border border-[#30363D] rounded p-4 group">
-                  <div className="flex flex-col items-center justify-center gap-1 text-[#30363D]">
-                     <div className="w-1 h-1 rounded-full bg-current"></div>
-                     <div className="w-1 h-1 rounded-full bg-current"></div>
-                     <div className="w-1 h-1 rounded-full bg-current"></div>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[10px] text-[#8B949E] font-bold tracking-wider uppercase mb-1">PHASE 0{index + 1}</p>
-                    <input 
-                      type="text" 
-                      value={phase.name}
-                      onChange={(e) => handlePhaseChange(index, "name", e.target.value)}
-                      className="bg-transparent text-white font-bold focus:outline-none focus:border-b border-[#4493F8] w-full"
-                    />
-                  </div>
-                  <div className="w-32">
-                    <p className="text-[10px] text-[#8B949E] font-bold tracking-wider uppercase mb-1">DURATION (MIN)</p>
-                    <input 
-                      type="number" 
-                      value={phase.durationMinutes}
-                      onChange={(e) => handlePhaseChange(index, "durationMinutes", Number(e.target.value))}
-                      className="w-full bg-[#161B22] border border-[#30363D] rounded p-1.5 text-white text-sm text-center focus:outline-none focus:border-[#4493F8]"
-                    />
-                  </div>
-                  <div className="flex flex-col items-center justify-center">
-                    <p className="text-[10px] text-[#8B949E] font-bold tracking-wider uppercase mb-2">AUTO</p>
-                    <input 
-                      type="checkbox" 
-                      checked={phase.autoTransition}
-                      onChange={(e) => handlePhaseChange(index, "autoTransition", e.target.checked)}
-                      className="accent-[#3FB950] w-4 h-4 cursor-pointer"
-                    />
-                  </div>
-                  <button onClick={() => handleRemovePhase(index)} className="text-[#30363D] hover:text-red-500 transition-colors ml-2">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-              
-              <button onClick={handleAddPhase} className="w-full py-3 border border-dashed border-[#30363D] rounded text-[#8B949E] text-sm hover:text-white hover:border-[#8B949E] transition-all flex justify-center items-center gap-2 mt-4">
-                <Plus size={16} /> INSERT PHASE HERE
-              </button>
-            </div>
+      <div className="space-y-6">
+        <div className="bg-[#161B22] border border-[#30363D] rounded-xl p-6">
+          <h2 className="text-sm font-bold tracking-wider uppercase text-[#8B949E] mb-4 border-b border-[#30363D] pb-2">Global Parameters</h2>
+          <div>
+            <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Event Name</label>
+            <input 
+              type="text" 
+              value={eventName}
+              onChange={(e) => setEventName(e.target.value)}
+              placeholder="e.g. Winter Hackathon 2026"
+              className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 px-4 text-white focus:outline-none focus:border-[#4493F8] transition-colors font-mono text-sm"
+            />
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Sidebar Actions */}
-        <div className="w-80 flex flex-col gap-6">
-          
-          {/* Custom Branding */}
-          <div className="bg-[#161B22] border border-[#30363D] rounded-lg p-6">
-            <h3 className="text-[#3FB950] text-xs font-bold tracking-widest uppercase mb-4 flex items-center gap-2">
-              <span className="w-4 h-4 border-t-2 border-l-2 border-[#3FB950]"></span> Custom Branding
-            </h3>
-            <div>
-              <label className="block text-xs text-[#8B949E] font-medium mb-2 uppercase tracking-wider">Accent Color</label>
-              <div className="flex items-center gap-3">
-                <input 
-                  type="color" 
-                  value={accentColor}
-                  onChange={(e) => setAccentColor(e.target.value)}
-                  className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent"
-                />
-                <span className="text-white text-sm font-mono bg-[#0D1117] border border-[#30363D] px-3 py-1.5 rounded">{accentColor}</span>
-              </div>
-            </div>
+        <div className="bg-[#161B22] border border-[#30363D] rounded-xl p-6">
+          <div className="flex justify-between items-center border-b border-[#30363D] pb-2 mb-4">
+            <h2 className="text-sm font-bold tracking-wider uppercase text-[#8B949E]">Timeline Architecture</h2>
+            <button onClick={addPhase} className="text-[#4493F8] hover:text-[#3178C6] flex items-center gap-1 text-xs font-bold uppercase transition-colors">
+              <Plus size={14} /> Add Phase
+            </button>
           </div>
 
-          {/* Finalize Engine */}
-          <div className="bg-[#161B22] border border-[#30363D] rounded-lg p-6">
-            <h3 className="text-white text-sm font-bold mb-3 flex items-center gap-2">
-              🚀 Finalize Engine
-            </h3>
-            <p className="text-xs text-[#8B949E] leading-relaxed mb-6">
-              By deploying this flow, you are initializing the hackathon timeline. All participants with the room link will see the active phase.
-            </p>
-            
-            {!deployedData ? (
-              <button 
-                onClick={handleDeploy} 
-                disabled={isDeploying}
-                className="w-full py-3 bg-[#4493F8] text-white rounded font-bold text-sm hover:bg-[#3178C6] transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
-              >
-                {isDeploying ? "DEPLOYING..." : "DEPLOY HACKATHON ⚡"}
-              </button>
-            ) : (
-              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="p-3 bg-[#1B2E24] border border-[#2EA043] rounded text-center mb-4">
-                  <span className="text-[#3FB950] text-sm font-bold flex justify-center items-center gap-2">
-                    <CheckCircle2 size={16} /> DEPLOYMENT SUCCESS
-                  </span>
+          <div className="space-y-3">
+            {phases.map((phase, index) => (
+              <div key={phase.id} className="flex items-center gap-4 bg-[#0D1117] border border-[#30363D] p-3 rounded-md group">
+                <div className="text-[10px] font-mono text-[#8B949E] font-bold w-6 text-center">
+                  {String(index + 1).padStart(2, '0')}
                 </div>
                 
-                <div>
-                  <p className="text-[10px] text-[#8B949E] font-bold tracking-wider uppercase mb-1">Participant Room ID</p>
-                  <div className="flex justify-between items-center bg-[#0D1117] border border-[#30363D] rounded p-2">
-                    <span className="text-[#4493F8] font-mono font-bold">{deployedData.roomId}</span>
-                    <button onClick={() => copyToClipboard(deployedData.roomId, "room")} className="text-[#8B949E] hover:text-white">
-                      {copied === "room" ? <CheckCircle2 size={14} className="text-[#3FB950]"/> : <Copy size={14} />}
-                    </button>
-                  </div>
+                <input 
+                  type="text"
+                  value={phase.name}
+                  onChange={(e) => updatePhase(phase.id, 'name', e.target.value)}
+                  className="flex-1 bg-transparent border-none text-white focus:outline-none font-mono text-sm"
+                  placeholder="Phase Name"
+                />
+
+                <div className="flex items-center gap-2 border-l border-[#30363D] pl-4">
+                  <input 
+                    type="number"
+                    value={phase.durationMinutes}
+                    onChange={(e) => updatePhase(phase.id, 'durationMinutes', parseInt(e.target.value) || 0)}
+                    className="w-20 bg-[#161B22] border border-[#30363D] rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-[#4493F8] font-mono text-center"
+                  />
+                  <span className="text-xs text-[#8B949E] font-bold uppercase tracking-wider">MIN</span>
                 </div>
 
-                <div>
-                  <p className="text-[10px] text-[#8B949E] font-bold tracking-wider uppercase mb-1">Organizer Secret (Keep Safe!)</p>
-                  <div className="flex justify-between items-center bg-[#0D1117] border border-[#30363D] rounded p-2">
-                    <span className="text-[#E6EDF3] font-mono text-xs truncate w-48 opacity-50 blur-[2px] hover:blur-none transition-all">{deployedData.organizerSecret}</span>
-                    <button onClick={() => copyToClipboard(deployedData.organizerSecret, "secret")} className="text-[#8B949E] hover:text-white">
-                      {copied === "secret" ? <CheckCircle2 size={14} className="text-[#3FB950]"/> : <Copy size={14} />}
-                    </button>
-                  </div>
-                </div>
+                <button 
+                  onClick={() => removePhase(phase.id)}
+                  className="text-[#8B949E] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all pl-2"
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
-            )}
+            ))}
           </div>
+        </div>
 
+        <div className="flex justify-end pt-4">
+          <button 
+            onClick={handleDeploy}
+            disabled={isDeploying}
+            className="px-8 py-3 bg-[#3FB950] text-[#0D1117] rounded-md font-bold hover:bg-[#2EA043] transition-colors flex items-center gap-2 disabled:opacity-50 shadow-[0_0_15px_rgba(63,185,80,0.2)]"
+          >
+            {isDeploying ? "INITIALIZING..." : (
+              <>
+                <TerminalSquare size={18} /> DEPLOY FLOW
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

@@ -29,8 +29,9 @@ const handler = NextAuth({
           if (res.ok && user) {
             return {
               id: user.id,
-              name: user.name, // Pulling the real name from the backend!
+              name: user.name, 
               email: user.email,
+              image: user.profilePic, 
             };
           }
           
@@ -42,6 +43,33 @@ const handler = NextAuth({
       }
     })
   ],
+  // NEW: Callbacks to handle dynamic session updates
+  callbacks: {
+    async jwt({ token, user, trigger, session }) {
+      // 1. Initial Sign-in: Map user data to the token
+      if (user) {
+        token.id = user.id;
+        token.name = user.name;
+        token.picture = user.image; // NextAuth uses 'picture' internally for images
+      }
+      
+      // 2. Client Update Trigger: Modify the token on the fly
+      if (trigger === "update" && session) {
+        if (session.name) token.name = session.name;
+        if (session.image) token.picture = session.image;
+      }
+      
+      return token;
+    },
+    async session({ session, token }) {
+      // Pass the updated token data back into the active session
+      if (session.user) {
+        session.user.name = token.name;
+        session.user.image = token.picture;
+      }
+      return session;
+    }
+  },
   pages: {
     signIn: '/login',
   },

@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { Clock, AtSign, Lock, LogIn, Users, Hash, UserPlus, ArrowRight, ShieldCheck, User } from 'lucide-react';
+import { Clock, AtSign, Lock, LogIn, Users, Hash, UserPlus, ArrowRight, ShieldCheck, User, Image as ImageIcon } from 'lucide-react';
+import { PRESET_AVATARS } from '@/lib/constants';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [teamName, setTeamName] = useState('');
   const [roomId, setRoomId] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState(PRESET_AVATARS[0]);
   
   // Loading & Error States
   const [error, setError] = useState('');
@@ -28,7 +30,15 @@ export default function LoginPage() {
     
     // --- GUEST FLOW ---
     if (activeTab === 'GUEST') {
-      router.push(`/room/${roomId}`);
+      // Save local session to keep them connected
+      localStorage.setItem('hackclock_guest', JSON.stringify({ 
+        teamName, 
+        roomId: roomId.toUpperCase(),
+        joinedAt: new Date().toISOString()
+      }));
+      
+      // Route directly to the clock UI
+      router.push(`/room/${roomId.toUpperCase()}/clock`);
       setIsLoading(false);
       return;
     } 
@@ -50,7 +60,7 @@ export default function LoginPage() {
         const res = await fetch('http://localhost:5000/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password }), // Sending the name!
+          body: JSON.stringify({ name, email, password, profilePic: selectedAvatar }),
         });
 
         const data = await res.json();
@@ -206,24 +216,53 @@ export default function LoginPage() {
             {(activeTab === 'LOG IN' || activeTab === 'CREATE') && (
               <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
                 
-                {/* NEW NAME FIELD FOR ACCOUNT CREATION */}
                 {activeTab === 'CREATE' && (
-                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                    <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Identity // Organizer Name</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <User size={16} className="text-[#8B949E]" />
+                  <>
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                      <label className="block text-[10px] text-[#8B949E] font-bold mb-3 uppercase tracking-wider">Identity // Avatar Selection</label>
+                      <div className="flex gap-3 justify-between">
+                        {PRESET_AVATARS.map((avatar, index) => (
+                          <div 
+                            key={index}
+                            onClick={() => setSelectedAvatar(avatar)}
+                            className={`w-12 h-12 rounded-lg cursor-pointer flex items-center justify-center bg-[#21262D] overflow-hidden transition-all duration-200 border-2 ${
+                              selectedAvatar === avatar 
+                                ? 'border-[#4493F8] shadow-[0_0_10px_rgba(68,147,248,0.3)]' 
+                                : 'border-[#30363D] hover:border-[#8B949E]'
+                            }`}
+                          >
+                            <img 
+                              src={avatar} 
+                              alt={`Preset ${index + 1}`} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                (e.target as HTMLImageElement).parentElement?.classList.add('fallback-icon');
+                              }}
+                            />
+                            <ImageIcon size={20} className="text-[#8B949E] absolute -z-10" />
+                          </div>
+                        ))}
                       </div>
-                      <input 
-                        type="text" 
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Alex Chen"
-                        className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 pl-10 pr-4 text-white placeholder-[#484F58] focus:outline-none focus:border-[#4493F8] transition-colors font-mono text-sm"
-                        required={activeTab === 'CREATE'}
-                      />
                     </div>
-                  </div>
+
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                      <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Identity // Organizer Name</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <User size={16} className="text-[#8B949E]" />
+                        </div>
+                        <input 
+                          type="text" 
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="e.g. Alex Chen"
+                          className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 pl-10 pr-4 text-white placeholder-[#484F58] focus:outline-none focus:border-[#4493F8] transition-colors font-mono text-sm"
+                          required={activeTab === 'CREATE'}
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 <div>
@@ -314,7 +353,7 @@ export default function LoginPage() {
                     GitHub
                   </button>
                   <button type="button" className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#0D1117] border border-[#30363D] rounded-md hover:bg-[#21262D] transition-colors text-xs font-bold text-[#8B949E] hover:text-white uppercase tracking-wider">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FC6D26" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 13.29-3.33-10a.42.42 0 0 0-.14-.18.38.38 0 0 0-.22-.11.39.39 0 0 0-.23.07.42.42 0 0 0-.14.18l-2.26 6.67H8.32L6.1 3.26a.42.42 0 0 0-.1-.18.38.38 0 0 0-.26-.08.39.39 0 0 0-.23.07.42.42 0 0 0-.14.18L2 13.29a.74.74 0 0 0 .27.83L12 21l9.69-6.88a.71.71 0 0 0 .31-.83Z"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FC6D26" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 13.29-3.33-10a.42.42 0 0 0-.14-.18.38.38 0 0 0-.22-.11.39.39 0 0 0-.23.07.42.42 0 0 0-.14.18L2 13.29a.74.74 0 0 0 .27.83L12 21l9.69-6.88a.71.71 0 0 0 .31-.83Z"></path></svg>
                     GitLab
                   </button>
                 </div>
@@ -333,20 +372,6 @@ export default function LoginPage() {
           Running V2.4.0-NOIR Stable Build
         </p>
       </main>
-
-      <footer className="h-16 flex justify-between items-center px-8 border-t border-[#30363D] bg-[#161B22]/50 text-xs font-medium text-[#8B949E]">
-        <div className="flex items-center gap-2">
-          <span className="text-white font-bold">GitCity Noir</span>
-          <span>© 2026 GitCity Noir Architect. All rights reserved.</span>
-        </div>
-        <div className="flex items-center gap-6">
-          <span className="cursor-pointer hover:text-white transition">Privacy Policy</span>
-          <span className="cursor-pointer hover:text-white transition">Terms of Service</span>
-          <span className="flex items-center gap-2 text-[#3FB950] uppercase tracking-wider text-[10px] font-bold">
-            <div className="w-1.5 h-1.5 bg-[#3FB950] rounded-full animate-pulse"></div> API Status
-          </span>
-        </div>
-      </footer>
 
     </div>
   );

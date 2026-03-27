@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 
+// Import the controller we just built above
 const flowController = require('../controllers/flowController');
-const dashboardController = require('../controllers/dashboardController');
 
-// POST /api/hackathons/ - Create a new event
-router.post('/', flowController.createFlow);
+// POST /api/hackathons -> Creates a new room
+router.post('/', flowController.deployFlow);
 
-// GET /api/hackathons/:roomId - Get event data for the dashboard
-router.get('/:roomId', dashboardController.getDashboardData);
+// GET /api/hackathons/:roomId -> Fetches room data
+router.get('/:roomId', flowController.getRoomData);
 
 module.exports = router;
