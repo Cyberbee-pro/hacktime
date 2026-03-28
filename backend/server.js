@@ -12,6 +12,16 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use(cors());
 
+// Health check
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    status: "Active", 
+    engine: "HackClock Core",
+    message: "Master Backend is operational. Use /api routes for data." 
+  });
+});
+
+
 // Connect Master Router
 app.use('/api', routes);
 
