@@ -28,14 +28,14 @@ export default function ProfilePage() {
     setMessage(null);
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/profile', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: session?.user?.email, 
-          name, 
-          profilePic: selectedAvatar 
-        }),
+        body: JSON.stringify({
+          email: session?.user?.email,
+          name,
+          profilePic: selectedAvatar
+        })
       });
 
       if (!res.ok) throw new Error("Failed to update profile");
