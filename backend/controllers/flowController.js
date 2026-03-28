@@ -31,7 +31,7 @@ const getRoomData = async (req, res) => {
 const updateRoomState = async (req, res) => {
   try {
     const { roomId } = req.params;
-    const { action, organizerSecret } = req.body;
+    const { action, organizerSecret, announcementText, announcementDuration } = req.body;
     
     const room = await Hackathon.findOne({ roomId: roomId.toUpperCase() });
     if (!room) return res.status(404).json({ error: "Room not found." });
@@ -59,6 +59,13 @@ const updateRoomState = async (req, res) => {
         room.pausedRemainingMs = null;
       }
     }
+    // NEW: Handle Broadcast Overrides
+    else if (action === 'ANNOUNCE') {
+      room.announcement = announcementText || "";
+      room.announcementDuration = announcementDuration || 10;
+      room.announcementTimestamp = new Date(); // Logs the exact moment of broadcast
+    }
+
     await room.save();
     res.status(200).json(room);
   } catch (err) { res.status(500).json({ error: err.message }); }

@@ -1,23 +1,55 @@
 "use client";
 
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 import Sidebar from '@/components/ui/Sidebar';
-import { Megaphone, Lightbulb, Wifi, HelpCircle, Bell, Settings, User } from 'lucide-react';
+import { Megaphone, X } from 'lucide-react';
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function ClockView({ params }: { params: Promise<{ id: string }> }) {
-  const unwrappedParams = use(params);
-  const roomId = unwrappedParams.id;
-  const [eventData, setEventData] = useState<any>(null);
+  const [roomId, setRoomId] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  
+  // Broadcast States
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [lastAnnouncementTime, setLastAnnouncementTime] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
-    const fetchRoom = async () => {
-      const res = await fetch(`http://localhost:5000/api/hackathons/${roomId}`);
-      if (res.ok) setEventData(await res.json());
-    };
-    fetchRoom();
-  }, [roomId]);
+    params.then(p => setRoomId(p.id));
+  }, [params]);
 
+  const { data: eventData } = useSWR(
+    roomId ? `http://localhost:5000/api/hackathons/${roomId}` : null, 
+    fetcher, 
+    { refreshInterval: 5000 }
+  );
+
+  // Broadcast Full-Screen Override Logic
+  useEffect(() => {
+    if (!eventData) return;
+    
+    // Prevent old announcements from popping up when you first load the page
+    if (isInitialLoad) {
+      setLastAnnouncementTime(eventData.announcementTimestamp);
+      setIsInitialLoad(false);
+      return;
+    }
+
+    if (eventData.announcementTimestamp && eventData.announcementTimestamp !== lastAnnouncementTime) {
+      setLastAnnouncementTime(eventData.announcementTimestamp);
+      
+      if (eventData.announcement) {
+        setShowAnnouncement(true);
+        const durationMs = (eventData.announcementDuration || 10) * 1000;
+        const timer = setTimeout(() => setShowAnnouncement(false), durationMs);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [eventData, isInitialLoad, lastAnnouncementTime]);
+
+  // Normal Clock Logic
   useEffect(() => {
     if (!eventData) return;
     if (eventData.status === 'PAUSED' && eventData.pausedRemainingMs) {
@@ -47,20 +79,21 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
   }, [eventData]);
 
   const formatTime = (time: number) => Math.max(0, time).toString().padStart(2, '0');
-  if (!eventData) return <div className="h-screen w-screen bg-[#0D1117]"></div>;
+  
+  if (!eventData) return <div className="h-screen w-screen bg-[#0D1117] flex items-center justify-center text-[#4493F8] font-mono tracking-widest uppercase animate-pulse">Syncing...</div>;
 
   const currentPhase = eventData.phases[eventData.currentPhaseIndex] || {};
   const accent = eventData.branding?.accentColor || '#4493F8';
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0D1117] text-[#E6EDF3]">
+    <div className="flex h-screen overflow-hidden bg-[#0D1117] text-[#E6EDF3] relative">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-y-auto">
         <header className="h-16 flex justify-between items-center px-8 bg-[#161B22] border-b border-[#30363D]">
           <div className="flex items-center gap-3 text-sm">
             <Megaphone size={16} style={{ color: accent }} />
             <span style={{ color: accent }} className="font-bold uppercase tracking-wider text-xs">LATEST:</span>
-            <span className="text-[#8B949E]">{eventData.announcement || "Setup your workstations!"}</span>
+            <span className="text-[#8B949E] truncate max-w-xl">{eventData.announcement || "Setup your workstations!"}</span>
           </div>
         </header>
 
@@ -74,12 +107,11 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
             </div>
           </div>
 
-          {/* NEW: Upcoming Flow Timeline */}
           <div>
             <h3 className="text-xl font-bold text-white mb-4">Upcoming Flow</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {eventData.phases.map((phase: any, index: number) => {
-                if (index < eventData.currentPhaseIndex) return null; // Hide past phases
+                if (index < eventData.currentPhaseIndex) return null; 
                 const isCurrent = index === eventData.currentPhaseIndex;
                 return (
                   <div key={index} className={`bg-[#161B22] border rounded-xl p-5 ${isCurrent ? '' : 'border-[#30363D]'}`} style={{ borderColor: isCurrent ? accent : undefined }}>
@@ -95,9 +127,32 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
               })}
             </div>
           </div>
-
         </div>
       </main>
+
+      {/* MASSIVE FULL SCREEN OVERLAY */}
+      {showAnnouncement && (
+        <div 
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md cursor-pointer"
+          onClick={() => setShowAnnouncement(false)}
+        >
+          <div className="relative max-w-5xl w-full p-12 text-center animate-in fade-in zoom-in duration-300">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowAnnouncement(false); }}
+              className="absolute top-4 right-4 text-white/50 hover:text-white"
+            >
+              <X size={32} />
+            </button>
+            <Megaphone size={64} style={{ color: accent }} className="mx-auto mb-8 animate-pulse" />
+            <h1 className="text-6xl md:text-8xl font-black text-white tracking-tight leading-tight drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+              {eventData.announcement}
+            </h1>
+            <p className="mt-12 text-[#8B949E] tracking-[0.3em] uppercase text-sm font-bold animate-pulse">
+              Click anywhere to dismiss
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

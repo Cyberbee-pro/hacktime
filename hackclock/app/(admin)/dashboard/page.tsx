@@ -1,36 +1,28 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import { Network, Play, Pause, FastForward, Megaphone, Terminal, Clock, CheckCircle2, Users } from 'lucide-react';
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const activeRoomId = (session?.user as any)?.activeRoomId;
   const userEmail = session?.user?.email;
   
-  const [eventData, setEventData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [announcementInput, setAnnouncementInput] = useState("");
+  const [announcementDuration, setAnnouncementDuration] = useState(10); // Default 10s
 
-  useEffect(() => {
-    if (!activeRoomId) { setIsLoading(false); return; }
-    
-    const fetchRoom = async () => {
-      try {
-        const res = await fetch(`http://localhost:5000/api/hackathons/${activeRoomId}`);
-        if (res.ok) setEventData(await res.json());
-      } catch (err) { console.error(err); } 
-      finally { setIsLoading(false); }
-    };
+  const { data: eventData, error, mutate } = useSWR(
+    activeRoomId ? `http://localhost:5000/api/hackathons/${activeRoomId}` : null,
+    fetcher,
+    { refreshInterval: 5000 } 
+  );
 
-    fetchRoom(); // Initial fetch
-    
-    // NEW: Poll every 5 seconds to update the Participants roster!
-    const intervalId = setInterval(fetchRoom, 5000); 
-    return () => clearInterval(intervalId);
-
-  }, [activeRoomId]);
+  const isLoading = !eventData && !error && activeRoomId;
 
   const handleEngineControl = async (action: 'PAUSE' | 'RESUME' | 'NEXT_PHASE') => {
     if (!activeRoomId || !userEmail) return;
@@ -38,17 +30,33 @@ export default function DashboardPage() {
       if (!window.confirm("WARNING: Force the next phase? This cannot be undone.")) return;
     }
     try {
-      const res = await fetch(`http://localhost:5000/api/hackathons/${activeRoomId}/state`, {
+      await fetch(`http://localhost:5000/api/hackathons/${activeRoomId}/state`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, organizerSecret: userEmail }) 
       });
-      const data = await res.json();
-      if (res.ok) setEventData(data);
-      else alert(data.error);
+      mutate(); 
+    } catch (error) { alert("System Error: Could not connect to Master Node."); }
+  };
+
+  const handleBroadcast = async () => {
+    if (!activeRoomId || !userEmail || !announcementInput.trim()) return;
+    try {
+      await fetch(`http://localhost:5000/api/hackathons/${activeRoomId}/state`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'ANNOUNCE', 
+          organizerSecret: userEmail, 
+          announcementText: announcementInput,
+          announcementDuration: announcementDuration
+        }) 
+      });
+      setAnnouncementInput("");
+      mutate(); 
     } catch (error) { alert("System Error: Could not connect to Master Node."); }
   };
 
   if (isLoading) return <div className="h-full flex items-center justify-center text-[#4493F8] font-mono tracking-widest uppercase animate-pulse">Syncing Master Node...</div>;
+  
   if (!activeRoomId || !eventData) return (
     <div className="h-full flex flex-col items-center justify-center text-center max-w-lg mx-auto">
       <div className="w-20 h-20 bg-[#161B22] border border-[#30363D] rounded-2xl flex items-center justify-center mb-6"><Terminal size={40} className="text-[#8B949E]" /></div>
@@ -56,6 +64,16 @@ export default function DashboardPage() {
       <Link href="/flow" className="px-8 py-4 bg-[#4493F8] text-white rounded-lg font-bold hover:bg-[#3178C6] transition-colors flex items-center gap-2 uppercase tracking-wider text-sm"><Network size={18} /> Deploy New Flow</Link>
     </div>
   );
+
+  if (eventData.status === 'COMPLETED') {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-center max-w-lg mx-auto">
+        <CheckCircle2 size={64} className="text-[#3FB950] mb-6" />
+        <h1 className="text-3xl font-bold text-white mb-2">Hackathon Concluded</h1>
+        <p className="text-[#8B949E]">All phases have been successfully executed. The engine has powered down.</p>
+      </div>
+    );
+  }
 
   const currentPhase = eventData.phases[eventData.currentPhaseIndex] || {};
   const accent = eventData.branding?.accentColor || '#4493F8';
@@ -69,6 +87,13 @@ export default function DashboardPage() {
             {eventData.name}
           </h1>
           <p className="text-[#8B949E] font-mono tracking-widest uppercase text-xs">ROOM ID // <span style={{ color: accent }}>{activeRoomId}</span></p>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] text-[#8B949E] font-bold tracking-[0.2em] uppercase mb-1">Engine Status</p>
+          <p className={`text-sm font-bold flex items-center justify-end gap-2 ${eventData.status === 'RUNNING' ? 'text-[#3FB950]' : 'text-yellow-500'}`}>
+             <span className={`w-2 h-2 rounded-full ${eventData.status === 'RUNNING' ? 'bg-[#3FB950] animate-pulse' : 'bg-yellow-500'}`}></span>
+             {eventData.status}
+          </p>
         </div>
       </div>
 
@@ -101,6 +126,30 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-[#161B22] border border-[#30363D] rounded-xl p-6">
+        <h2 className="text-xs font-bold tracking-wider uppercase text-white mb-4 flex items-center gap-2"><Megaphone size={16} style={{ color: accent }} /> Broadcast Announcement System</h2>
+        <div className="flex gap-4">
+          <input 
+            type="text" 
+            value={announcementInput}
+            onChange={(e) => setAnnouncementInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleBroadcast()}
+            placeholder="Push full-screen override to all connected views..." 
+            className="flex-1 bg-[#0D1117] border border-[#30363D] rounded-md py-3 px-4 text-white outline-none focus:border-[#8B949E] text-sm" 
+          />
+          <div className="relative w-28">
+            <input 
+              type="number" 
+              value={announcementDuration}
+              onChange={(e) => setAnnouncementDuration(parseInt(e.target.value) || 10)}
+              className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 pl-4 pr-8 text-white outline-none focus:border-[#8B949E] text-sm text-center font-mono" 
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#8B949E] font-bold uppercase tracking-wider">Sec</span>
+          </div>
+          <button onClick={handleBroadcast} className="px-8 py-3 bg-white text-[#0D1117] rounded-md font-bold text-sm hover:bg-[#E6EDF3] transition-colors uppercase tracking-wider shadow-lg">Broadcast</button>
         </div>
       </div>
 

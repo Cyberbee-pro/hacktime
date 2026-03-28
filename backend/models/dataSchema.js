@@ -19,7 +19,11 @@ const HackathonSchema = new mongoose.Schema({
   currentPhaseIndex: { type: Number, default: 0 },
   phaseEndTime: { type: Date, default: null }, 
   pausedRemainingMs: { type: Number, default: null }, 
+  
+  // NEW: Advanced Broadcast Data
   announcement: { type: String, default: "" }, 
+  announcementDuration: { type: Number, default: 10 },
+  announcementTimestamp: { type: Date, default: null },
   
   phases: [PhaseSchema],
   branding: {
@@ -27,7 +31,6 @@ const HackathonSchema = new mongoose.Schema({
     logoUrl: { type: String, default: "" } 
   },
   
-  // Tracks connected teams
   participants: [{
     teamName: { type: String, required: true },
     joinedAt: { type: Date, default: Date.now }
