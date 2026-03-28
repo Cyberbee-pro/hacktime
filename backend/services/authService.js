@@ -1,19 +1,19 @@
 const bcrypt = require('bcrypt');
 const User = require('../models/userSchema');
 
-const registerUser = async (name, email, plainTextPassword) => {
+const registerUser = async (name, email, plainTextPassword, profilePic) => {
   const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    throw new Error('An account with this email already exists.');
-  }
+  if (existingUser) throw new Error('An account with this email already exists.');
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(plainTextPassword, salt);
 
   const newUser = new User({
-    name, // Added name here!
+    name,
     email,
-    password: hashedPassword
+    password: hashedPassword,
+    profilePic: profilePic || '/avatars/preset-1.jpeg',
+    activeRoomId: null // Explicitly set to null on creation
   });
 
   return await newUser.save();
@@ -21,21 +21,31 @@ const registerUser = async (name, email, plainTextPassword) => {
 
 const verifyLogin = async (email, plainTextPassword) => {
   const user = await User.findOne({ email });
-  if (!user) {
-    throw new Error('Invalid credentials.');
-  }
+  if (!user) throw new Error('Invalid credentials.');
 
   const isMatch = await bcrypt.compare(plainTextPassword, user.password);
-  if (!isMatch) {
-    throw new Error('Invalid credentials.');
-  }
+  if (!isMatch) throw new Error('Invalid credentials.');
 
+  // Return the full safe object including the activeRoomId
   return {
     id: user._id,
-    name: user.name, // Added name to the secure response!
+    name: user.name,
     email: user.email,
-    role: user.role
+    profilePic: user.profilePic,
+    role: user.role,
+    activeRoomId: user.activeRoomId 
   };
 };
 
-module.exports = { registerUser, verifyLogin };
+const updateUserProfile = async (email, newName, newProfilePic) => {
+  const updatedUser = await User.findOneAndUpdate(
+    { email }, 
+    { name: newName, profilePic: newProfilePic }, 
+    { new: true } 
+  );
+  
+  if (!updatedUser) throw new Error('User not found.');
+  return updatedUser;
+};
+
+module.exports = { registerUser, verifyLogin, updateUserProfile };

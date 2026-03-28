@@ -2,14 +2,13 @@
 
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import Sidebar from "@/components/ui/Sidebar";
 import { Bell, Settings, User } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  // Grab the session data from NextAuth
   const { data: session, status } = useSession();
 
-  // Show a dark-mode loading state while NextAuth verifies the session cookie
   if (status === "loading") {
     return (
       <div className="flex h-screen items-center justify-center bg-[#0D1117]">
@@ -20,7 +19,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // If no session exists, kick them back to the login terminal
   if (status === "unauthenticated") {
     redirect("/login");
   }
@@ -35,15 +33,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Bell size={18} className="cursor-pointer hover:text-white transition-colors" />
             <Settings size={18} className="cursor-pointer hover:text-white transition-colors" />
             
-            {/* Show the logged-in user's email dynamically */}
-            <div className="flex items-center gap-3 ml-4 pl-4 border-l border-[#30363D]">
-              <span className="text-xs font-mono uppercase text-[#3FB950]">
-                {session?.user?.email || 'ADMIN'}
+            {/* NEW: Clickable Profile Block showing Name and Avatar */}
+            <Link href="/profile" className="flex items-center gap-3 ml-4 pl-4 border-l border-[#30363D] cursor-pointer group">
+              <span className="text-xs font-mono uppercase text-[#3FB950] group-hover:text-[#4493F8] transition-colors">
+                {session?.user?.name || 'ADMIN'}
               </span>
-              <div className="w-8 h-8 rounded-full bg-[#1F2937] flex items-center justify-center text-white border border-[#30363D]">
-                <User size={16} />
+              <div className="w-8 h-8 rounded-full bg-[#1F2937] flex items-center justify-center text-white border border-[#30363D] overflow-hidden group-hover:border-[#4493F8] transition-colors">
+                {session?.user?.image ? (
+                  <img src={session.user.image} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={16} />
+                )}
               </div>
-            </div>
+            </Link>
           </div>
         </header>
         
