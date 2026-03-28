@@ -11,7 +11,7 @@ interface TimerData {
 }
 
 // Connect to your local Node server 
-const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export const useHackathon = (roomId: string) => {
   const [socket, setSocket] = useState<Socket | null>(null);

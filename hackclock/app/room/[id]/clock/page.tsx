@@ -21,7 +21,7 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
   }, [params]);
 
   const { data: eventData } = useSWR(
-    roomId ? `http://localhost:5000/api/hackathons/${roomId}` : null, 
+    roomId ? `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId}` : null, 
     fetcher, 
     { refreshInterval: 5000 }
   );

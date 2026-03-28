@@ -49,7 +49,7 @@ export default function Sidebar() {
       router.push('/login');
     } else {
       // Disconnect Organizer
-      await fetch('http://localhost:5000/api/auth/active-room', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/active-room`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: session?.user?.email, roomId: null })
       });
@@ -64,7 +64,7 @@ export default function Sidebar() {
     const teamName = window.prompt("Enter your Team/Participant Name:") || "Guest Terminal";
 
     try {
-      const res = await fetch(`http://localhost:5000/api/hackathons/${targetRoom.toUpperCase()}/join`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${targetRoom.toUpperCase()}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teamName })

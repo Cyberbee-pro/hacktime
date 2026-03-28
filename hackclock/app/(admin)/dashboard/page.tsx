@@ -17,7 +17,7 @@ export default function DashboardPage() {
   const [announcementDuration, setAnnouncementDuration] = useState(10); // Default 10s
 
   const { data: eventData, error, mutate } = useSWR(
-    activeRoomId ? `http://localhost:5000/api/hackathons/${activeRoomId}` : null,
+    activeRoomId ? `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${activeRoomId}` : null,
     fetcher,
     { refreshInterval: 5000 } 
   );
@@ -30,7 +30,7 @@ export default function DashboardPage() {
       if (!window.confirm("WARNING: Force the next phase? This cannot be undone.")) return;
     }
     try {
-      await fetch(`http://localhost:5000/api/hackathons/${activeRoomId}/state`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${activeRoomId}/state`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, organizerSecret: userEmail }) 
       });
@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const handleBroadcast = async () => {
     if (!activeRoomId || !userEmail || !announcementInput.trim()) return;
     try {
-      await fetch(`http://localhost:5000/api/hackathons/${activeRoomId}/state`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${activeRoomId}/state`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           action: 'ANNOUNCE', 
