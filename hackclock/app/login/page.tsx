@@ -8,7 +8,7 @@ import { PRESET_AVATARS } from '@/lib/constants';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('LOG IN');
+  const [activeTab, setActiveTab] = useState<'LOG IN' | 'CREATE' | 'GUEST'>('LOG IN');
 
   // Form States
   const [name, setName] = useState('');
@@ -57,7 +57,7 @@ export default function LoginPage() {
       }
       
       try {
-        const res = await fetch('http://localhost:5000/api/auth/register', {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password, profilePic: selectedAvatar }),
@@ -156,7 +156,7 @@ export default function LoginPage() {
                 key={tab}
                 type="button"
                 onClick={() => {
-                  setActiveTab(tab);
+                  setActiveTab(tab as 'LOG IN' | 'CREATE' | 'GUEST');
                   setPassword('');
                   setConfirmPassword('');
                   setError('');
@@ -277,7 +277,7 @@ export default function LoginPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="architect@gitcity.noir"
                       className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 pl-10 pr-4 text-white placeholder-[#484F58] focus:outline-none focus:border-[#4493F8] transition-colors font-mono text-sm"
-                      required={activeTab !== 'GUEST'}
+                      required={(activeTab as string) !== 'GUEST'}
                     />
                   </div>
                 </div>
@@ -299,7 +299,7 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 pl-10 pr-4 text-white placeholder-[#484F58] focus:outline-none focus:border-[#4493F8] transition-colors font-mono text-sm tracking-widest"
-                      required={activeTab !== 'GUEST'}
+                      required={(activeTab as string) !== 'GUEST'}
                     />
                   </div>
                 </div>
