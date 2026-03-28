@@ -1,0 +1,1 @@
+export default function StageHubPage() { return <div>Stage Hub</div>; }

@@ -1,0 +1,1 @@
+export default function ParticipantPage() { return <div>Participant View</div>; }
