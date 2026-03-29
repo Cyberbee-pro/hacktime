@@ -30,7 +30,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0D1117] text-[#E6EDF3]`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased text-slate-200`}
         suppressHydrationWarning
       >
         <AuthProvider session={session}>

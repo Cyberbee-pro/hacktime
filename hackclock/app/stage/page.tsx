@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { MonitorPlay } from "lucide-react";
+import { MonitorPlay, LayoutGrid, ArrowRight } from "lucide-react";
 
 export default async function StageHubPage() {
   const session = await getServerSession(authOptions);
@@ -12,21 +12,45 @@ export default async function StageHubPage() {
     redirect(`/room/${(session.user as any).activeRoomId}/stage`);
   }
 
-  // Fallback for when there's no active room
   return (
-    <div className="flex flex-col h-screen items-center justify-center bg-[#0D1117] text-[#E6EDF3] p-4 text-center">
-      <div className="w-16 h-16 bg-[#21262D] rounded-xl flex items-center justify-center mb-6 border border-[#30363D] shadow-lg">
-        <MonitorPlay size={32} className="text-[#3FB950]" />
+    <div className="flex flex-col min-h-screen items-center justify-center p-6 stagger-in">
+      {/* Background Glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/5 blur-[140px] rounded-full pointer-events-none" />
+
+      <div className="glass rounded-[3rem] p-12 md:p-16 max-w-xl w-full text-center border-white/5 shadow-[0_64px_128px_rgba(0,0,0,0.6)] relative z-10 overflow-hidden">
+        <div className="inline-flex p-5 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 mb-10 shadow-2xl group transition-all hover:scale-110 duration-500">
+          <MonitorPlay size={40} className="text-emerald-400 group-hover:rotate-3 transition-transform duration-500" />
+        </div>
+
+        <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-6">
+          Stage Standby
+        </h1>
+        
+        <p className="text-slate-400 text-lg font-medium leading-relaxed mb-12">
+          No active presentation flow detected. Link a stage endpoint from the command center to activate the immersive broadcast view.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link 
+            href="/dashboard" 
+            className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-blue-500 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
+          >
+            <LayoutGrid size={16} /> Command Center
+          </Link>
+          <Link 
+            href="/flow" 
+            className="px-8 py-4 bg-white/5 text-slate-300 border border-white/5 rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-white/10 hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
+          >
+            Create Flow <ArrowRight size={14} />
+          </Link>
+        </div>
+
+        {/* Footer Status */}
+        <div className="mt-16 pt-8 border-t border-white/5 flex items-center justify-center gap-2 opacity-40">
+           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+           <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Projection Offline</span>
+        </div>
       </div>
-      <h1 className="text-3xl font-black tracking-tight text-white mb-4">No Active Flow Detected</h1>
-      <p className="text-[#8B949E] max-w-md mb-8">
-        You haven&apos;t initialized any hackathon timeline or linked a stage endpoint yet. 
-        Create a timeline from your administration dashboard to present the stage.
-      </p>
-      
-      <Link href="/dashboard" className="px-6 py-3 bg-[#3FB950] text-white rounded-md font-bold text-sm hover:bg-[#2EA043] transition-colors shadow-[0_0_15px_rgba(63,185,80,0.3)]">
-        Return to Dashboard
-      </Link>
     </div>
   );
 }

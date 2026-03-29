@@ -27,12 +27,12 @@ export default function SettingsPopover() {
 
   return (
     <div className="relative" ref={popoverRef}>
-      <Settings 
-        size={18} 
-        title="Terminal Console Settings"
-        className={`cursor-pointer transition-colors ${isOpen ? 'text-white' : 'hover:text-white'}`}
-        onClick={() => setIsOpen(!isOpen)}
-      />
+      <button title="Terminal Console Settings" onClick={() => setIsOpen(!isOpen)} className="outline-none">
+        <Settings 
+          size={18} 
+          className={`cursor-pointer transition-colors ${isOpen ? 'text-white' : 'hover:text-white'}`}
+        />
+      </button>
       
       {isOpen && (
         <div className="absolute right-0 mt-4 w-64 bg-[#161B22] border border-[#30363D] rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right overflow-hidden">

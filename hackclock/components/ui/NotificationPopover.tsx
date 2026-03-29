@@ -19,12 +19,12 @@ export default function NotificationPopover() {
 
   return (
     <div className="relative" ref={popoverRef}>
-      <Bell 
-        size={18} 
-        title="System Alerts & Notifications"
-        className={`cursor-pointer transition-colors ${isOpen ? 'text-white' : 'hover:text-white'}`}
-        onClick={() => setIsOpen(!isOpen)}
-      />
+      <button title="System Alerts & Notifications" onClick={() => setIsOpen(!isOpen)} className="outline-none">
+        <Bell 
+          size={18} 
+          className={`cursor-pointer transition-colors ${isOpen ? 'text-white' : 'hover:text-white'}`}
+        />
+      </button>
       
       {isOpen && (
         <div className="absolute right-0 mt-4 w-80 bg-[#161B22] border border-[#30363D] rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">

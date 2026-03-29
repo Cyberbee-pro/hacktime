@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { Network, Play, Pause, FastForward, Megaphone, Terminal, CheckCircle2, Square, Trash2, ChevronDown, ChevronUp, History, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Network, Play, Pause, FastForward, Megaphone, Terminal, CheckCircle2, Square, Trash2, ChevronDown, History, AlertTriangle, RefreshCw, Clock, Monitor } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -55,7 +55,7 @@ export default function DashboardPage() {
   const { data: activeEvent, mutate: mutateActive } = useSWR<HackathonFlow>(
     activeRoomId ? `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${activeRoomId}` : null,
     fetcher,
-    { refreshInterval: 2000 } 
+    { refreshInterval: 2000 }
   );
 
   useEffect(() => {
@@ -90,7 +90,7 @@ export default function DashboardPage() {
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId}/state`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, organizerSecret: userEmail }) 
+        body: JSON.stringify({ action, organizerSecret: userEmail })
       });
       mutateAll();
       if (roomId === activeRoomId) mutateActive();
@@ -119,12 +119,12 @@ export default function DashboardPage() {
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${activeRoomId}/state`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'ANNOUNCE', 
-          organizerSecret: userEmail, 
+        body: JSON.stringify({
+          action: 'ANNOUNCE',
+          organizerSecret: userEmail,
           announcementText: announcementInput,
           announcementDuration: announcementDuration
-        }) 
+        })
       });
 
       const newHistory = [announcementInput, ...broadcastHistory.slice(0, 9)];
@@ -132,7 +132,7 @@ export default function DashboardPage() {
       localStorage.setItem('broadcast_history', JSON.stringify(newHistory));
 
       setAnnouncementInput("");
-      mutateActive(); 
+      mutateActive();
     } catch { alert("System Error: Could not connect to Master Node."); }
   };
 
@@ -141,103 +141,103 @@ export default function DashboardPage() {
   const completed = allFlows?.filter((f) => f.status === 'COMPLETED') || [];
 
   return (
-    <div className="max-w-6xl mx-auto pb-12 space-y-10">
+    <div className="max-w-6xl mx-auto pb-20 space-y-12 stagger-in">
 
       {/* 1. Header & Quick Stats */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Command Center</h1>
-          <p className="text-[#8B949E] font-mono text-xs uppercase tracking-widest">Organizer: <span className="text-[#3FB950]">{userEmail}</span></p>
+          <h1 className="text-4xl font-semibold tracking-tight text-white mb-2">Overview</h1>
+          <p className="text-slate-400 text-sm font-medium">
+            Welcome back, <span className="text-blue-400">{userEmail?.split('@')[0]}</span>. System is operational.
+          </p>
         </div>
-        <div className="flex gap-4">
-          <Link 
-            href="/flow" 
-            title="Design New Hackathon Structure"
-            className="px-5 py-2.5 bg-[#4493F8] text-white rounded-md font-bold hover:bg-[#3178C6] transition-all flex items-center gap-2 uppercase tracking-wider text-[10px] shadow-[0_0_15px_rgba(68,147,248,0.25)]"
+        <div className="flex items-center gap-4">
+          <Link
+            href="/flow"
+            className="px-6 py-2.5 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all flex items-center gap-2 text-sm"
           >
-            <Network size={14} /> Design New Flow
+            <Network size={18} /> New Flow
           </Link>
         </div>
-      </div>
+      </header>
 
-      {/* 2. Active Engines (The live sessions) */}
-      <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#3FB950] animate-pulse shadow-[0_0_8px_rgba(63,185,80,0.4)]"></div>
-          <h2 className="text-xs font-bold tracking-widest uppercase text-white flex items-center gap-2">
-            <RefreshCw size={12} className="text-[#8B949E]" /> Active Engines ({activeFlows.length})
-          </h2>
+      {/* 2. Active Engines */}
+      <section>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.5)]"></div>
+            <h2 className="text-lg font-semibold text-white">Active Hackathon</h2>
+          </div>
         </div>
 
         {activeFlows.length === 0 ? (
-          <div className="bg-[#161B22] border border-[#30363D] border-dashed rounded-xl p-12 text-center group hover:border-[#4493F8]/50 transition-colors">
-            <Terminal size={40} className="text-[#30363D] mx-auto mb-4 group-hover:text-[#4493F8]/30 transition-colors" />
-            <p className="text-[#8B949E] text-sm">No active hackathon sessions detected.</p>
+          <div className="glass border-dashed border-white/10 rounded-3xl p-16 text-center group transition-all hover:bg-white/[0.04]">
+            <p className="text-slate-400 font-medium">No active hackathon sessions detected.</p>
+            <Link href="/flow" className="text-blue-400 text-sm mt-2 inline-block hover:underline">Deploy a blueprint to begin</Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {activeFlows.map((flow: any, idx: number) => (
-              <div 
-                key={flow.roomId} 
-                className="bg-[#161B22] border border-[#30363D] rounded-xl p-6 relative overflow-hidden group transition-all hover:border-[#8B949E] hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] animate-in fade-in slide-in-from-left-4 duration-500"
-                style={{ borderLeft: `4px solid ${flow.branding?.accentColor || '#4493F8'}`, animationDelay: `${idx * 100}ms` }}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 stagger-in">
+            {activeFlows.map((flow: any) => (
+              <div
+                key={flow.roomId}
+                className="glass rounded-3xl p-8 relative overflow-hidden group transition-all glass-hover border-white/5 shadow-2xl"
               >
+                {/* Visual Accent */}
+                <div
+                  className="absolute top-0 left-0 w-1.5 h-full opacity-60"
+                  style={{ backgroundColor: flow.branding?.accentColor || 'var(--accent-primary)' }}
+                ></div>
 
-                <div className="flex justify-between items-start mb-4 relative z-10">
+                <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-1 group-hover:text-[#4493F8] transition-colors">{flow.name}</h3>
-                    <p className="text-[10px] font-mono text-[#8B949E] tracking-widest uppercase">ROOM ID // {flow.roomId}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => openConfirmModal('DELETE', flow.roomId, flow.name)} 
-                      title="Delete this Flow Blueprint"
-                      className="p-2 text-[#8B949E] hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${flow.status === 'RUNNING' ? 'bg-[#1B2E24] text-[#3FB950]' : 'bg-[#2D1A1E] text-yellow-500'}`}>
-                      {flow.status}
+                    <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">{flow.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-slate-500 tracking-wider uppercase bg-white/5 px-2 py-0.5 rounded">ID: {flow.roomId}</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${flow.status === 'RUNNING' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                        {flow.status}
+                      </span>
                     </div>
                   </div>
+                  <button
+                    onClick={() => openConfirmModal('DELETE', flow.roomId, flow.name)}
+                    className="p-2.5 text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
 
-                <div className="flex gap-3 mt-6">
+                <div className="flex gap-4 mt-8">
                   {flow.status === 'RUNNING' ? (
-                    <button 
-                      onClick={() => engineControlExecution(flow.roomId, 'PAUSE')} 
-                      title="Pause Global Timer"
-                      className="flex-1 py-2 bg-[#21262D] border border-[#30363D] text-white rounded font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#30363D]"
+                    <button
+                      onClick={() => engineControlExecution(flow.roomId, 'PAUSE')}
+                      className="flex-1 py-3 bg-white/5 border border-white/5 text-white rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
                     >
-                      <Pause size={12} /> Pause
+                      <Pause size={14} /> Pause
                     </button>
                   ) : (
-                    <button 
-                      onClick={() => engineControlExecution(flow.roomId, 'RESUME')} 
-                      title="Resume Global Timer"
-                      className="flex-1 py-2 bg-[#1B2E24] border border-[#2EA043] text-[#3FB950] rounded font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#1B2E24]/80"
+                    <button
+                      onClick={() => engineControlExecution(flow.roomId, 'RESUME')}
+                      className="flex-1 py-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition-all"
                     >
-                      <Play size={12} /> Resume
+                      <Play size={14} /> Resume
                     </button>
                   )}
-                  <button 
+                  <button
                     onClick={() => openConfirmModal('NEXT_PHASE', flow.roomId, flow.name)}
-                    title="Force Transition to Next Phase"
-                    className="flex-1 py-2 bg-[#21262D] border border-[#30363D] text-white rounded font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#30363D]"
+                    className="flex-1 py-3 bg-white/5 border border-white/5 text-white rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
                   >
-                    <FastForward size={12} /> Next
+                    <FastForward size={14} /> Next
                   </button>
-                  <button 
-                    onClick={() => openConfirmModal('STOP', flow.roomId, flow.name)} 
-                    title="Permanently Conclude Session"
-                    className="p-2 bg-[#21262D] border border-[#30363D] text-[#8B949E] hover:text-red-500 rounded transition-colors"
+                  <button
+                    onClick={() => openConfirmModal('STOP', flow.roomId, flow.name)}
+                    className="p-3 bg-white/5 border border-white/5 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-2xl transition-all"
                   >
-                    <Square size={14} />
+                    <Square size={16} />
                   </button>
                 </div>
 
-                <Link href={flow.roomId === activeRoomId ? "#active-control" : `/room/${flow.roomId}/clock`} onClick={async () => { if (flow.roomId !== activeRoomId) await update({ activeRoomId: flow.roomId }); }} className="block mt-4 text-center text-[10px] font-bold text-[#4493F8] uppercase tracking-widest hover:underline">
-                  {flow.roomId === activeRoomId ? "Currently Linked to Terminal" : "Link to Command Terminal"}
+                <Link href={flow.roomId === activeRoomId ? "#active-control" : `/room/${flow.roomId}/clock`} onClick={async () => { if (flow.roomId !== activeRoomId) await update({ activeRoomId: flow.roomId }); }} className="block mt-6 text-center text-[11px] font-bold text-blue-400 uppercase tracking-[0.2em] hover:text-blue-300 transition-colors">
+                  {flow.roomId === activeRoomId ? "● Currently Linked" : "Connect to Terminal"}
                 </Link>
               </div>
             ))}
@@ -245,149 +245,162 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* 3. Global Control (Only if an active room is linked) */}
+      {/* 4. Global Control */}
       {activeEvent && activeEvent.status !== 'COMPLETED' && (
-        <section id="active-control" className="bg-[#161B22] border border-[#4493F8]/30 rounded-xl p-8 shadow-[0_0_30px_rgba(68,147,248,0.05)]">
-          <div className="flex flex-col lg:flex-row gap-8">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-2 h-2 rounded-full bg-[#4493F8] animate-pulse"></div>
-                <h2 className="text-xs font-bold tracking-widest uppercase text-white">Live Engine Console: {activeEvent.name}</h2>
+        <section id="active-control" className="glass rounded-[2.5rem] p-10 border-blue-500/10 shadow-[0_32px_64px_rgba(0,0,0,0.4)] relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-10">
+              <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-400">
+                <Terminal size={20} />
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-                <div className="bg-[#0D1117] p-4 rounded-lg border border-[#30363D]">
-                   <p className="text-[9px] text-[#8B949E] uppercase font-bold mb-1">Status</p>
-                   <p className="text-sm font-bold text-white uppercase">{activeEvent.status}</p>
-                </div>
-                <div className="bg-[#0D1117] p-4 rounded-lg border border-[#30363D]">
-                   <p className="text-[9px] text-[#8B949E] uppercase font-bold mb-1">Current Phase</p>
-                   <p className="text-sm font-bold text-white truncate">{activeEvent.phases[activeEvent.currentPhaseIndex]?.name || "N/A"}</p>
-                </div>
-                <div className="bg-[#0D1117] p-4 rounded-lg border border-[#30363D]">
-                   <p className="text-[9px] text-[#8B949E] uppercase font-bold mb-1">Participants</p>
-                   <div className="flex items-center gap-2">
-                     <p className="text-sm font-bold text-white">{activeEvent.participants?.length || 0}</p>
-                     <RefreshCw size={10} className="text-[#30363D] hover:text-[#4493F8] cursor-pointer transition-all active:rotate-180" title="Sync Master Node Data" onClick={() => mutateActive()} />
-                   </div>
-                </div>
-                <div className="bg-[#0D1117] p-4 rounded-lg border border-[#30363D]">
-                   <p className="text-[9px] text-[#8B949E] uppercase font-bold mb-1">Room ID</p>
-                   <p className="text-sm font-bold text-[#4493F8] font-mono">{activeRoomId}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-[10px] font-bold text-[#8B949E] uppercase tracking-widest flex items-center gap-2">
-                  <Megaphone size={12} className="text-[#4493F8]" title="Announcements System" /> Terminal Broadcast
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input 
-                    type="text" 
-                    value={announcementInput}
-                    onChange={(e) => setAnnouncementInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleBroadcast()}
-                    placeholder="Message to all screens..." 
-                    className="flex-1 bg-[#0D1117] border border-[#30363D] rounded py-2.5 px-4 text-sm text-white focus:border-[#4493F8] outline-none transition-colors"
-                  />
-                  <div className="flex gap-3">
-                    <div className="relative">
-                      <input 
-                        type="number" 
-                        value={announcementDuration}
-                        title="Announcement Duration (seconds)"
-                        onChange={(e) => setAnnouncementDuration(parseInt(e.target.value) || 5)}
-                        className="w-20 bg-[#0D1117] border border-[#30363D] rounded py-2.5 pr-8 pl-3 text-center text-sm text-white outline-none font-mono"
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] font-bold text-[#8B949E] pointer-events-none uppercase">Sec</span>
-                    </div>
-                    <button onClick={handleBroadcast} className="px-6 py-2.5 bg-white text-[#0D1117] rounded font-bold text-[10px] uppercase tracking-widest hover:bg-[#E6EDF3] transition-colors shadow-lg">Broadcast</button>
-                  </div>
-                </div>
-
-                {broadcastHistory.length > 0 && (
-                  <div>
-                    <button 
-                      onClick={() => setShowHistory(!showHistory)}
-                      className="text-[9px] font-bold text-[#8B949E] uppercase tracking-widest flex items-center gap-1 hover:text-white transition-colors"
-                    >
-                      <History size={10} /> {showHistory ? 'Hide' : 'Show'} Broadcast History
-                    </button>
-                    {showHistory && (
-                      <div className="mt-2 space-y-1 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
-                        {broadcastHistory.map((h, i) => (
-                          <div key={i} className="text-[10px] text-[#8B949E] bg-[#0D1117] p-2 rounded flex justify-between items-center group">
-                            <span>{h}</span>
-                            <button onClick={() => setAnnouncementInput(h)} className="text-[#4493F8] opacity-0 group-hover:opacity-100 uppercase font-bold text-[8px]">Reuse</button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+              <div>
+                <h2 className="text-xl font-bold text-white">{activeEvent.name}</h2>
+                <p className="text-xs text-slate-500 font-medium">Live Control Interface</p>
               </div>
             </div>
 
-            <div className="w-full lg:w-64 space-y-4">
-               <div className="flex justify-between items-center">
-                 <p className="text-[10px] font-bold text-[#8B949E] uppercase tracking-widest">Connected Teams</p>
-                 <RefreshCw size={10} className="text-[#30363D] hover:text-[#4493F8] cursor-pointer transition-colors" title="Force Sync Teams" onClick={() => mutateActive()} />
-               </div>
-               <div className="bg-[#0D1117] border border-[#30363D] rounded-lg p-4 h-[220px] overflow-y-auto space-y-2 custom-scrollbar">
+            <div className="flex flex-col lg:flex-row gap-12">
+              <div className="flex-1 space-y-10">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Status', value: activeEvent.status, sub: 'Current State' },
+                    { label: 'Phase', value: activeEvent.phases[activeEvent.currentPhaseIndex]?.name || "N/A", sub: 'Phase Execution' },
+                    { label: 'Teams', value: activeEvent.participants?.length || 0, sub: 'Total Connected' },
+                    { label: 'Node ID', value: activeRoomId, sub: 'Active Room' },
+                  ].map((item, i) => (
+                    <div key={i} className="bg-black/20 p-5 rounded-2xl border border-white/5">
+                      <p className="text-[9px] text-slate-500 uppercase font-bold mb-1 tracking-wider">{item.label}</p>
+                      <p className="text-sm font-semibold text-white truncate">{item.value}</p>
+                      <p className="text-[8px] text-slate-600 font-medium mt-1">{item.sub}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <Megaphone size={14} className="text-blue-400" /> Terminal Broadcast
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <input
+                      type="text"
+                      value={announcementInput}
+                      onChange={(e) => setAnnouncementInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleBroadcast()}
+                      placeholder="Broadcast message to all terminals..."
+                      className="flex-1 bg-black/20 border border-white/5 rounded-2xl py-4 px-6 text-sm text-white focus:border-blue-500/50 focus:bg-black/40 outline-none transition-all"
+                    />
+                    <div className="flex gap-4">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={announcementDuration}
+                          onChange={(e) => setAnnouncementDuration(parseInt(e.target.value) || 5)}
+                          className="w-24 bg-black/20 border border-white/5 rounded-2xl py-4 pr-10 pl-4 text-center text-sm text-white outline-none font-mono focus:border-blue-500/50"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-600 pointer-events-none uppercase">Sec</span>
+                      </div>
+                      <button onClick={handleBroadcast} className="px-8 py-4 bg-white text-black rounded-2xl font-bold text-[11px] uppercase tracking-widest hover:bg-blue-50 transition-all shadow-xl active:scale-95">Broadcast</button>
+                    </div>
+                  </div>
+
+                  {broadcastHistory.length > 0 && (
+                    <div className="pt-2">
+                      <button
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 hover:text-blue-400 transition-colors"
+                      >
+                        <History size={12} /> {showHistory ? 'Hide' : 'Show'} History
+                      </button>
+                      {showHistory && (
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                          {broadcastHistory.map((h, i) => (
+                            <div key={i} className="text-[10px] text-slate-400 bg-black/20 p-3 rounded-xl border border-white/5 flex justify-between items-center group">
+                              <span className="truncate pr-4">{h}</span>
+                              <button onClick={() => setAnnouncementInput(h)} className="text-blue-400 opacity-0 group-hover:opacity-100 uppercase font-bold text-[9px] shrink-0">Reuse</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="w-full lg:w-72 space-y-6">
+                <div className="flex justify-between items-center px-1">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Terminals</p>
+                  <RefreshCw size={12} className="text-slate-600 hover:text-blue-400 cursor-pointer transition-colors" onClick={() => mutateActive()} />
+                </div>
+                <div className="bg-black/20 border border-white/5 rounded-3xl p-6 h-[280px] overflow-y-auto space-y-3 custom-scrollbar">
                   {activeEvent.participants?.map((p: any, i: number) => (
-                    <div key={i} className="flex items-center gap-2 py-1 border-b border-[#30363D]/50 last:border-0">
-                      <div className="w-1 h-1 rounded-full bg-[#3FB950]"></div>
-                      <span className="text-xs text-white font-medium truncate">{p.teamName}</span>
+                    <div key={i} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0 group">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
+                      <span className="text-sm text-slate-200 font-medium truncate group-hover:text-white transition-colors">{p.teamName}</span>
                     </div>
                   ))}
                   {(!activeEvent.participants || activeEvent.participants.length === 0) && (
-                    <p className="text-[10px] text-[#444] italic text-center mt-12">No terminals connected.</p>
+                    <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
+                      <Monitor size={32} className="mb-2 text-slate-600" />
+                      <p className="text-[11px] text-slate-500 font-medium">Listening for nodes...</p>
+                    </div>
                   )}
-               </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
       )}
 
-      {/* 4. Blueprints (Drafts) */}
-      <section>
-        <div className="flex items-center gap-3 mb-6">
-          <h2 className="text-xs font-bold tracking-widest uppercase text-white">Engine Blueprints ({drafts.length})</h2>
+      {/* 5. Blueprints */}
+      <section className="pt-10">
+        <div className="flex items-center gap-3 mb-8 px-1">
+          <h2 className="text-lg font-semibold text-white">Hackathon Blueprints</h2>
         </div>
 
         {drafts.length === 0 ? (
-          <div className="bg-[#161B22] border border-[#30363D] rounded-xl p-8 text-center">
-            <p className="text-[#8B949E] text-xs">No saved blueprints. Create a flow to save as draft.</p>
+          <div className="glass border-white/5 rounded-3xl p-12 text-center">
+            <p className="text-slate-500 font-medium text-sm">No saved blueprints. Create a flow to get started.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {drafts.map((flow: any) => (
-              <div key={flow.roomId} className="bg-[#161B22] border border-[#30363D] rounded-lg p-4 flex flex-col justify-between hover:border-[#8B949E] transition-all group">
+              <div key={flow.roomId} className="glass rounded-2xl p-6 flex flex-col justify-between glass-hover border-white/5 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
+                  <Terminal size={64} />
+                </div>
+
                 <div>
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-sm font-bold text-white truncate pr-4">{flow.name}</h3>
-                    <button 
-                      onClick={() => openConfirmModal('DELETE', flow.roomId, flow.name)} 
-                      title="Delete this Blueprint"
-                      className="p-1 text-[#444] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors truncate pr-6">{flow.name}</h3>
+                    <button
+                      onClick={() => openConfirmModal('DELETE', flow.roomId, flow.name)}
+                      className="p-1.5 text-slate-600 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
                     >
-                      <Trash2 size={12} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
-                  <p className="text-[9px] text-[#8B949E] font-mono mb-4">{flow.phases.length} Phases • {flow.phases.reduce((acc: number, p: any) => acc + p.durationMinutes, 0)}m Total</p>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="flex items-center gap-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                      <Clock size={12} /> {flow.phases.reduce((acc: number, p: any) => acc + p.durationMinutes, 0)}m
+                    </div>
+                    <div className="w-1 h-1 rounded-full bg-slate-700"></div>
+                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                      {flow.phases.length} Phases
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button 
+                <div className="flex gap-3">
+                  <button
                     onClick={() => engineControlExecution(flow.roomId, 'RESUME')}
-                    title="Deploy Live Terminal"
-                    className="flex-1 py-2 bg-[#4493F8] text-white rounded text-[10px] font-bold uppercase tracking-wider hover:bg-[#3178C6] transition-colors"
+                    className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-blue-500 transition-all active:scale-95"
                   >
-                    <Play size={10} className="inline mr-1" /> Launch
+                    Launch
                   </button>
-                  <Link 
+                  <Link
                     href={`/flow?edit=${flow.roomId}`}
-                    title="Modify Flow Structure"
-                    className="flex-1 py-2 bg-[#21262D] border border-[#30363D] text-[#8B949E] hover:text-white rounded text-[10px] font-bold uppercase tracking-wider text-center transition-colors"
+                    className="flex-1 py-2.5 bg-white/5 border border-white/5 text-slate-400 hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest text-center transition-all"
                   >
                     Edit
                   </Link>
@@ -398,34 +411,40 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* 5. Archive (Completed) */}
-      <section>
-        <button 
+      {/* 6. Archive */}
+      <section className="pt-10">
+        <button
           onClick={() => setIsArchiveOpen(!isArchiveOpen)}
-          className="flex items-center gap-2 text-[#8B949E] hover:text-white transition-colors"
+          className="flex items-center gap-3 text-slate-500 hover:text-white transition-all group"
         >
-          <h2 className="text-xs font-bold tracking-widest uppercase">Archived Sessions ({completed.length})</h2>
-          {isArchiveOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          <div className="p-2 bg-white/5 rounded-lg group-hover:bg-white/10 transition-all">
+            <History size={16} />
+          </div>
+          <h2 className="text-sm font-bold tracking-widest uppercase">Archived Hackathon ({completed.length})</h2>
+          <div className={`transition-transform duration-300 ${isArchiveOpen ? 'rotate-180' : ''}`}>
+            <ChevronDown size={18} />
+          </div>
         </button>
 
         {isArchiveOpen && (
-          <div className="mt-4 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-            {completed.length === 0 && <p className="text-[10px] text-[#444] italic p-4">Archive is empty.</p>}
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+            {completed.length === 0 && <p className="text-xs text-slate-600 italic p-6">Archive is currently empty.</p>}
             {completed.map((flow: any) => (
-              <div key={flow.roomId} className="bg-[#0D1117] border border-[#30363D] rounded-lg p-3 flex justify-between items-center group">
+              <div key={flow.roomId} className="glass border-white/5 rounded-2xl p-5 flex justify-between items-center group hover:bg-white/[0.04] transition-all">
                 <div className="flex items-center gap-4">
-                   <CheckCircle2 size={14} className="text-[#3FB950]" title="Session Concluded" />
-                   <div>
-                     <p className="text-xs font-bold text-white">{flow.name}</p>
-                     <p className="text-[9px] text-[#8B949E] font-mono uppercase">{flow.roomId} • Concluded {new Date(flow.updatedAt).toLocaleDateString()}</p>
-                   </div>
+                  <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400">
+                    <CheckCircle2 size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">{flow.name}</p>
+                    <p className="text-[10px] text-slate-500 font-mono mt-1 uppercase tracking-tight">{flow.roomId} • Concluded {new Date(flow.updatedAt).toLocaleDateString()}</p>
+                  </div>
                 </div>
-                <button 
-                  onClick={() => openConfirmModal('DELETE', flow.roomId, flow.name)} 
-                  title="Purge from Archive"
-                  className="p-2 text-[#444] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                <button
+                  onClick={() => openConfirmModal('DELETE', flow.roomId, flow.name)}
+                  className="p-2 text-slate-700 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={16} />
                 </button>
               </div>
             ))}
@@ -437,42 +456,39 @@ export default function DashboardPage() {
       <Modal
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-        title="Confirm Operation"
+        title="System Confirmation"
         footer={(
-          <>
-            <button 
+          <div className="flex gap-4 w-full">
+            <button
               onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-              className="px-4 py-2 text-xs font-bold uppercase text-[#8B949E] hover:text-white transition-colors"
+              className="flex-1 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all"
             >
               Cancel
             </button>
-            <button 
+            <button
               onClick={handleConfirmedAction}
-              className={`px-6 py-2 rounded font-bold text-xs uppercase tracking-widest transition-colors ${
-                confirmModal.type === 'DELETE' ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-[#4493F8] text-white hover:bg-[#3178C6]'
-              }`}
+              className={`flex-2 py-3 px-8 rounded-2xl font-bold text-[11px] uppercase tracking-widest transition-all shadow-xl active:scale-95 ${confirmModal.type === 'DELETE' ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-blue-600 text-white hover:bg-blue-500'
+                }`}
             >
-              Confirm {confirmModal.type === 'DELETE' ? 'Deletion' : confirmModal.type === 'STOP' ? 'Closure' : 'Next Phase'}
+              Confirm {confirmModal.type === 'DELETE' ? 'Purge' : 'Execution'}
             </button>
-          </>
+          </div>
         )}
       >
-        <div className="flex items-start gap-4">
-          <div className={`p-3 rounded-lg shrink-0 ${confirmModal.type === 'DELETE' ? 'bg-red-500/10 text-red-500' : 'bg-[#4493F8]/10 text-[#4493F8]'}`}>
-            <AlertTriangle size={24} />
+        <div className="flex flex-col items-center text-center py-4">
+          <div className={`p-5 rounded-3xl mb-6 shadow-2xl ${confirmModal.type === 'DELETE' ? 'bg-rose-500/10 text-rose-500' : 'bg-blue-500/10 text-blue-500'}`}>
+            <AlertTriangle size={32} />
           </div>
-          <div>
-            <p className="text-sm font-bold text-white mb-2 uppercase tracking-wide">
-              {confirmModal.type === 'DELETE' ? 'Irreversible Deletion' : 'Master Node Override'}
-            </p>
-            <p className="text-sm text-[#8B949E] leading-relaxed">
-              {confirmModal.type === 'DELETE' 
-                ? `You are about to purge "${confirmModal.flowName}" from the system. This cannot be undone.` 
-                : confirmModal.type === 'STOP'
-                ? `The session for "${confirmModal.flowName}" will be concluded and moved to the archive.`
-                : `Forcing the next phase for "${confirmModal.flowName}". This may impact active participant timers.`}
-            </p>
-          </div>
+          <h4 className="text-xl font-bold text-white mb-3">
+            {confirmModal.type === 'DELETE' ? 'Irreversible Purge' : 'Master Override'}
+          </h4>
+          <p className="text-sm text-slate-400 leading-relaxed max-w-[280px]">
+            {confirmModal.type === 'DELETE'
+              ? `Proceeding will permanently erase "${confirmModal.flowName}" from the central database. This action cannot be undone.`
+              : confirmModal.type === 'STOP'
+                ? `The session for "${confirmModal.flowName}" will be terminated and archived. All terminal links will be severed.`
+                : `You are forcing a phase transition for "${confirmModal.flowName}". Active terminal clocks will be synchronized immediately.`}
+          </p>
         </div>
       </Modal>
 
@@ -481,14 +497,14 @@ export default function DashboardPage() {
           width: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #0D1117;
+          background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #30363D;
+          background: rgba(255, 255, 255, 0.1);
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #8B949E;
+          background: rgba(255, 255, 255, 0.2);
         }
       `}</style>
     </div>

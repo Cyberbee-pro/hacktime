@@ -115,7 +115,30 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   }, [eventData]);
 
   const formatTime = (time: number) => Math.max(0, time).toString().padStart(2, '0');
-  if (!eventData) return <div className="h-screen w-screen bg-[#0D1117] flex items-center justify-center text-[#4493F8] font-mono tracking-widest uppercase animate-pulse">Syncing...</div>;
+  
+  if (!eventData || eventData.error || !eventData.phases) {
+    return (
+      <div className="flex flex-col min-h-screen items-center justify-center p-6 bg-[#0A0A0B]">
+        <div className="glass rounded-[3rem] p-12 md:p-16 max-w-xl w-full text-center border-white/5 shadow-2xl relative z-10 overflow-hidden">
+          <div className="inline-flex p-5 rounded-3xl bg-rose-500/10 border border-rose-500/20 mb-10 shadow-2xl">
+            <X size={40} className="text-rose-500" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-6">
+            Hackathon Not Found
+          </h1>
+          <p className="text-slate-400 text-lg font-medium leading-relaxed mb-12">
+            The stage endpoint you are attempting to access does not exist or has been decommissioned.
+          </p>
+          <Link 
+            href="/dashboard" 
+            className="px-8 py-4 bg-white text-black rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-slate-200 transition-all shadow-xl active:scale-95 inline-flex items-center justify-center gap-2"
+          >
+            <Terminal size={16} /> Hub Terminal
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const currentPhase = eventData.phases[eventData.currentPhaseIndex] || {};
   const nextPhase = eventData.phases[eventData.currentPhaseIndex + 1] || null;
