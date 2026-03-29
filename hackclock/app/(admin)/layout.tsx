@@ -21,7 +21,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-[#0D1117] text-[#E6EDF3]">
       {/* Mobile Header */}
       <header className="lg:hidden h-16 flex justify-between items-center px-6 bg-[#0D1117] border-b border-[#30363D] z-30 shrink-0">
-        <button 
+        <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="p-2 -ml-2 text-[#8B949E] hover:text-white transition-colors"
         >
@@ -37,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ${isSidebarOpen ? 'block' : 'hidden'}
       `}>
         {/* Backdrop for mobile */}
-        <div 
+        <div
           className="absolute inset-0 bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -51,10 +51,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header className="hidden lg:flex h-16 justify-between items-center px-8 bg-[#0D1117] border-b border-[#30363D] shrink-0">
           <h2 className="text-lg font-bold">HackClock</h2>
           <div className="flex items-center gap-4 text-[#8B949E]">
-            <NotificationPopover />
-            <SettingsPopover />
-            
-            <Link href="/profile" className="flex items-center gap-3 ml-4 pl-4 border-l border-[#30363D] cursor-pointer group">
+
+            <Link href="/profile" className="flex items-center gap-3 cursor-pointer group">
               <span className="text-xs font-mono uppercase text-[#3FB950] group-hover:text-[#4493F8] transition-colors">
                 {session?.user?.name || 'ADMIN'}
               </span>
@@ -68,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
           </div>
         </header>
-        
+
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {children}
         </main>

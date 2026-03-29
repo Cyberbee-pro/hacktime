@@ -58,6 +58,27 @@ const deleteFlow = async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
+const updateFlow = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { name, organizerSecret, eventStartTime, eventEndTime, timezone, branding, phases } = req.body;
+    
+    const flow = await Hackathon.findOne({ roomId: roomId.toUpperCase() });
+    if (!flow) return res.status(404).json({ error: "Flow not found." });
+    if (flow.organizerSecret !== organizerSecret) return res.status(403).json({ error: "Unauthorized." });
+
+    flow.name = name || flow.name;
+    flow.eventStartTime = eventStartTime || flow.eventStartTime;
+    flow.eventEndTime = eventEndTime || flow.eventEndTime;
+    flow.timezone = timezone || flow.timezone;
+    flow.branding = branding || flow.branding;
+    flow.phases = phases || flow.phases;
+
+    await flow.save();
+    res.status(200).json({ message: "Flow updated successfully.", roomId: flow.roomId });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+};
+
 const getRoomData = async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -136,4 +157,4 @@ const joinRoom = async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
-module.exports = { deployFlow, getAllFlows, deleteFlow, getRoomData, updateRoomState, joinRoom };
+module.exports = { deployFlow, getAllFlows, deleteFlow, updateFlow, getRoomData, updateRoomState, joinRoom };

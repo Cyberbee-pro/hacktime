@@ -161,24 +161,31 @@ export default function DashboardPage() {
       </div>
 
       {/* 2. Active Engines (The live sessions) */}
-      <section>
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#3FB950] animate-pulse"></div>
-          <h2 className="text-xs font-bold tracking-widest uppercase text-white">Active Engines ({activeFlows.length})</h2>
+          <div className="w-1.5 h-1.5 rounded-full bg-[#3FB950] animate-pulse shadow-[0_0_8px_rgba(63,185,80,0.4)]"></div>
+          <h2 className="text-xs font-bold tracking-widest uppercase text-white flex items-center gap-2">
+            <RefreshCw size={12} className="text-[#8B949E]" /> Active Engines ({activeFlows.length})
+          </h2>
         </div>
 
         {activeFlows.length === 0 ? (
-          <div className="bg-[#161B22] border border-[#30363D] border-dashed rounded-xl p-12 text-center">
-            <Terminal size={40} className="text-[#30363D] mx-auto mb-4" />
+          <div className="bg-[#161B22] border border-[#30363D] border-dashed rounded-xl p-12 text-center group hover:border-[#4493F8]/50 transition-colors">
+            <Terminal size={40} className="text-[#30363D] mx-auto mb-4 group-hover:text-[#4493F8]/30 transition-colors" />
             <p className="text-[#8B949E] text-sm">No active hackathon sessions detected.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {activeFlows.map((flow: any) => (
-              <div key={flow.roomId} className="bg-[#161B22] border border-[#30363D] rounded-xl p-6 relative overflow-hidden group transition-all hover:border-[#8B949E]" style={{ borderLeft: `4px solid ${flow.branding?.accentColor || '#4493F8'}` }}>
-                <div className="flex justify-between items-start mb-4">
+            {activeFlows.map((flow: any, idx: number) => (
+              <div 
+                key={flow.roomId} 
+                className="bg-[#161B22] border border-[#30363D] rounded-xl p-6 relative overflow-hidden group transition-all hover:border-[#8B949E] hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] animate-in fade-in slide-in-from-left-4 duration-500"
+                style={{ borderLeft: `4px solid ${flow.branding?.accentColor || '#4493F8'}`, animationDelay: `${idx * 100}ms` }}
+              >
+
+                <div className="flex justify-between items-start mb-4 relative z-10">
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-1">{flow.name}</h3>
+                    <h3 className="text-xl font-bold text-white mb-1 group-hover:text-[#4493F8] transition-colors">{flow.name}</h3>
                     <p className="text-[10px] font-mono text-[#8B949E] tracking-widest uppercase">ROOM ID // {flow.roomId}</p>
                   </div>
                   <div className="flex gap-2">
@@ -284,13 +291,16 @@ export default function DashboardPage() {
                     className="flex-1 bg-[#0D1117] border border-[#30363D] rounded py-2.5 px-4 text-sm text-white focus:border-[#4493F8] outline-none transition-colors"
                   />
                   <div className="flex gap-3">
-                    <input 
-                      type="number" 
-                      value={announcementDuration}
-                      title="Announcement Duration (seconds)"
-                      onChange={(e) => setAnnouncementDuration(parseInt(e.target.value) || 5)}
-                      className="w-16 bg-[#0D1117] border border-[#30363D] rounded py-2.5 text-center text-sm text-white outline-none font-mono"
-                    />
+                    <div className="relative">
+                      <input 
+                        type="number" 
+                        value={announcementDuration}
+                        title="Announcement Duration (seconds)"
+                        onChange={(e) => setAnnouncementDuration(parseInt(e.target.value) || 5)}
+                        className="w-20 bg-[#0D1117] border border-[#30363D] rounded py-2.5 pr-8 pl-3 text-center text-sm text-white outline-none font-mono"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] font-bold text-[#8B949E] pointer-events-none uppercase">Sec</span>
+                    </div>
                     <button onClick={handleBroadcast} className="px-6 py-2.5 bg-white text-[#0D1117] rounded font-bold text-[10px] uppercase tracking-widest hover:bg-[#E6EDF3] transition-colors shadow-lg">Broadcast</button>
                   </div>
                 </div>
@@ -366,13 +376,22 @@ export default function DashboardPage() {
                   </div>
                   <p className="text-[9px] text-[#8B949E] font-mono mb-4">{flow.phases.length} Phases • {flow.phases.reduce((acc: number, p: any) => acc + p.durationMinutes, 0)}m Total</p>
                 </div>
-                <button 
-                  onClick={() => engineControlExecution(flow.roomId, 'RESUME')}
-                  title="Deploy Live Terminal"
-                  className="w-full py-2 bg-[#4493F8] text-white rounded text-[10px] font-bold uppercase tracking-wider hover:bg-[#3178C6] transition-colors"
-                >
-                  <Play size={10} className="inline mr-1" /> Launch Engine
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => engineControlExecution(flow.roomId, 'RESUME')}
+                    title="Deploy Live Terminal"
+                    className="flex-1 py-2 bg-[#4493F8] text-white rounded text-[10px] font-bold uppercase tracking-wider hover:bg-[#3178C6] transition-colors"
+                  >
+                    <Play size={10} className="inline mr-1" /> Launch
+                  </button>
+                  <Link 
+                    href={`/flow?edit=${flow.roomId}`}
+                    title="Modify Flow Structure"
+                    className="flex-1 py-2 bg-[#21262D] border border-[#30363D] text-[#8B949E] hover:text-white rounded text-[10px] font-bold uppercase tracking-wider text-center transition-colors"
+                  >
+                    Edit
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
