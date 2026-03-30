@@ -64,10 +64,14 @@ export const authOptions: NextAuthOptions = {
       }
       
       if (trigger === "update" && session) {
-        const updatedSession = session as Session & { activeRoomId?: string };
-        if (updatedSession.name) authToken.name = updatedSession.name;
-        if (updatedSession.image) authToken.picture = updatedSession.image;
-        if (updatedSession.activeRoomId !== undefined) authToken.activeRoomId = updatedSession.activeRoomId;
+        const updatedSession = session as Session;
+        const updatedUser = updatedSession.user as (Session["user"] & {
+          activeRoomId?: string;
+        }) | undefined;
+
+        if (updatedUser?.name) authToken.name = updatedUser.name;
+        if (updatedUser?.image) authToken.picture = updatedUser.image;
+        if (updatedUser?.activeRoomId !== undefined) authToken.activeRoomId = updatedUser.activeRoomId;
       }
       
       return authToken;
