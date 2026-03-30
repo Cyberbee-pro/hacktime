@@ -1,26 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  /* HackClock Obsidian Noir v2 */
-  --background: #0A0A0B;
-  --foreground: #F8FAFC;
-
-  /* Surface & Glassmorphism */
-  --surface-1: #111112;
-  --surface-2: #1A1A1B;
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-glow: rgba(68, 147, 248, 0.1);
-
-  /* Refined Accents */
-  --accent-primary: #0070F3;
-  --accent-secondary: #00D1FF;
-  --accent-success: #10B981;
-  --accent-warning: #F59E0B;
-  --accent-danger: #F43F5E;
-  --text-muted: #94A3B8;
-
-  /* Emil's Custom Easing - More Punchy */
+  --background: #1c1c1c;
+  --foreground: #ffffff;
+  --primary: #5d00ff;
+  --secondary: #cfff04;
+  --accent: #ff2e9a;
+  --surface-1: #1c1c1c;
+  --surface-2: #232323;
+  --border-subtle: #30363d;
+  --text-muted: #a0a0a0;
+  --glass-bg: rgba(93, 0, 255, 0.12);
+  --glass-border: #30363d;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
@@ -28,19 +19,26 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-ibm-plex-mono);
+  --font-mono: var(--font-ibm-plex-mono);
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-ibm-plex-mono), monospace;
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(0, 112, 243, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 0% 100%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+    radial-gradient(circle at 20% 20%, rgba(93, 0, 255, 0.24) 0%, transparent 38%),
+    radial-gradient(circle at 80% 0%, rgba(255, 46, 154, 0.18) 0%, transparent 30%),
+    linear-gradient(180deg, #232323 0%, #1c1c1c 100%);
   background-attachment: fixed;
   min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--foreground);
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
 }
 
 /* Base interactive elements polish */
@@ -55,15 +53,14 @@ button:active:not(:disabled), [role="button"]:active {
 /* Glassmorphism Utilities */
 .glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--glass-border);
 }
 
 .glass-hover:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  background: rgba(93, 0, 255, 0.18);
+  border-color: var(--secondary);
   transform: translateY(-2px);
 }
 
@@ -75,11 +72,11 @@ button:active:not(:disabled), [role="button"]:active {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
+  background: var(--primary);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--accent);
 }
 
 /* Animations */

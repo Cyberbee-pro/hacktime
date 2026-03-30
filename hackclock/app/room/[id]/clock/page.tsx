@@ -5,6 +5,7 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import Sidebar from '@/components/ui/Sidebar';
 import { Megaphone, X, Menu, Clock as ClockIcon, Activity, History } from 'lucide-react';
+import ClockFace from '@/components/ui/ClockFace';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -237,16 +238,11 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
               </span>
             </div>
 
-            <div
-              className="my-6 md:my-10 flex items-center justify-center gap-1 sm:gap-2 text-center font-mono font-black leading-none text-white select-none"
-              style={{ textShadow: `0 0 60px ${accent}30` }}
-            >
-              <span className="text-[clamp(2.8rem,16vw,10rem)] tracking-tight">{formatTime(timeLeft.hours)}</span>
-              <span className="text-[clamp(2rem,10vw,7rem)] text-slate-500">:</span>
-              <span className="text-[clamp(2.8rem,16vw,10rem)] tracking-tight">{formatTime(timeLeft.minutes)}</span>
-              <span className="text-[clamp(2rem,10vw,7rem)] text-slate-500">:</span>
-              <span className="text-[clamp(2.8rem,16vw,10rem)] tracking-tight">{formatTime(timeLeft.seconds)}</span>
-            </div>
+            <ClockFace
+              hours={formatTime(timeLeft.hours)}
+              minutes={formatTime(timeLeft.minutes)}
+              seconds={formatTime(timeLeft.seconds)}
+            />
 
             <div className="flex flex-col items-center gap-2">
               <p className="text-[11px] md:text-sm font-bold tracking-[0.4em] uppercase text-slate-500 group-hover:text-slate-300 transition-colors">

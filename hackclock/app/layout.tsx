@@ -1,23 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const ibmPlexMono = IBM_Plex_Mono({
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-ibm-plex-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "HackClock | GitCity Noir",
-  description: "Terminal Session Authentication and Hackathon Management",
+  title: "HackClock | After-Dark",
+  description: "Tech-Noir hackathon orchestration terminal",
 };
 
 export default async function RootLayout({
@@ -30,7 +26,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased text-slate-200`}
+        className={`${ibmPlexMono.variable} antialiased text-slate-200`}
         suppressHydrationWarning
       >
         <AuthProvider session={session}>

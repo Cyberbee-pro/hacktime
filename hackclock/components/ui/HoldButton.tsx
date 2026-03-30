@@ -59,15 +59,15 @@ export default function HoldButton({
   }, []);
 
   const variantStyles = {
-    danger: 'text-red-500 border-red-900/50 hover:bg-red-950/30',
-    warning: 'text-yellow-500 border-yellow-900/50 hover:bg-yellow-950/30',
-    default: 'text-[#8B949E] border-[#30363D] hover:bg-[#30363D]/30'
+    danger: 'text-[#FF2E9A] border-[#30363D] bg-[#1C1C1C] hover:bg-[#2A1131]',
+    warning: 'text-[#CFFF04] border-[#30363D] bg-[#1C1C1C] hover:bg-[#2C310D]',
+    default: 'text-white border-[#30363D] bg-[#1C1C1C] hover:bg-[#2A1A56]'
   };
 
   const progressColors = {
-    danger: 'bg-red-500',
-    warning: 'bg-yellow-500',
-    default: 'bg-[#4493F8]'
+    danger: 'bg-[#FF2E9A]',
+    warning: 'bg-[#CFFF04]',
+    default: 'bg-[#FF2E9A]'
   };
 
   return (
@@ -77,7 +77,7 @@ export default function HoldButton({
       onMouseLeave={stopHolding}
       onTouchStart={startHolding}
       onTouchEnd={stopHolding}
-      className={`relative overflow-hidden border rounded-md p-2 transition-all active:scale-[0.97] group select-none ${variantStyles[variant]} ${className}`}
+      className={`relative overflow-hidden border rounded-sm p-2.5 transition-all active:scale-[0.97] group select-none uppercase tracking-tight ${variantStyles[variant]} ${className}`}
       title={`Hold to ${label}`}
     >
       <div className="relative z-10 flex items-center justify-center gap-2">
@@ -87,13 +87,13 @@ export default function HoldButton({
       
       {/* Progress Overlay */}
       <div 
-        className={`absolute bottom-0 left-0 h-full opacity-20 transition-all ease-linear ${progressColors[variant]}`}
+        className={`absolute bottom-0 left-0 h-full opacity-35 transition-all ease-linear ${progressColors[variant]}`}
         style={{ width: `${progress}%` }}
       />
       
       {/* Background fill for progress indicator */}
       {isHolding && (
-        <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(90deg,transparent_0%,rgba(255,46,154,0.35)_50%,transparent_100%)] animate-pulse" />
       )}
     </button>
   );

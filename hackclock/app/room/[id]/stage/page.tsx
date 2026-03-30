@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { Terminal, Megaphone, Clock, X, History } from 'lucide-react';
+import ClockFace from '@/components/ui/ClockFace';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -187,13 +188,12 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
         
         <p className="text-[10px] md:text-sm text-[#8B949E] font-bold tracking-[0.3em] md:tracking-[0.5em] uppercase mb-4 md:mb-8 z-10">Time Remaining</p>
         
-        <div className="text-[clamp(4rem,25vw,18rem)] font-black tracking-tighter leading-none text-white font-mono z-10 mb-8 md:mb-16 flex items-center" style={{ textShadow: `0 0 80px ${accent}30` }}>
-          {formatTime(timeLeft.hours)}
-          <span className="text-[#30363D] drop-shadow-none mx-1 md:mx-2">:</span>
-          {formatTime(timeLeft.minutes)}
-          <span className="text-[#30363D] drop-shadow-none mx-1 md:mx-2">:</span>
-          {formatTime(timeLeft.seconds)}
-        </div>
+        <ClockFace
+          hours={formatTime(timeLeft.hours)}
+          minutes={formatTime(timeLeft.minutes)}
+          seconds={formatTime(timeLeft.seconds)}
+          className="z-10 mb-8 md:mb-16"
+        />
 
         <div className="flex flex-col md:flex-row gap-6 md:gap-12 z-10 mb-8 md:mb-12 w-full max-w-5xl">
           <div className="flex-1 bg-transparent border-l-4 pl-6 md:pl-8" style={{ borderColor: accent }}>
