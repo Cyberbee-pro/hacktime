@@ -6,15 +6,17 @@ import { MonitorPlay, LayoutGrid, ArrowRight } from "lucide-react";
 
 export default async function StageHubPage() {
   const session = await getServerSession(authOptions);
+  const activeRoomId = session?.user && "activeRoomId" in session.user
+    ? session.user.activeRoomId
+    : undefined;
   
   // If user is authenticated and has an active room, direct them to that room's stage
-  if (session?.user && (session.user as any).activeRoomId) {
-    redirect(`/room/${(session.user as any).activeRoomId}/stage`);
+  if (activeRoomId) {
+    redirect(`/room/${activeRoomId}/stage`);
   }
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center p-6 stagger-in">
-      {/* Background Glow */}
+    <div className="flex flex-col min-h-screen items-center justify-center p-6 stagger-in bg-[#0A0A0B] text-slate-200">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/5 blur-[140px] rounded-full pointer-events-none" />
 
       <div className="glass rounded-[3rem] p-12 md:p-16 max-w-xl w-full text-center border-white/5 shadow-[0_64px_128px_rgba(0,0,0,0.6)] relative z-10 overflow-hidden">
@@ -45,7 +47,6 @@ export default async function StageHubPage() {
           </Link>
         </div>
 
-        {/* Footer Status */}
         <div className="mt-16 pt-8 border-t border-white/5 flex items-center justify-center gap-2 opacity-40">
            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
            <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Projection Offline</span>

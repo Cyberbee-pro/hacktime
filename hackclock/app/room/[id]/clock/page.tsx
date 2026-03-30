@@ -1,24 +1,22 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import Sidebar from '@/components/ui/Sidebar';
-import { Megaphone, X, Menu, Edit, Plus, Trash2, Save, CheckCircle2, Clock as ClockIcon, Activity, ChevronRight, AlertCircle, Loader2, History } from 'lucide-react';
+import { Megaphone, X, Menu, Clock as ClockIcon, Activity, History } from 'lucide-react';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
+interface Phase {
+  name: string;
+  durationMinutes: number;
+}
+
 export default function ClockView({ params }: { params: Promise<{ id: string }> }) {
-  const { data: session } = useSession();
   const [roomId, setRoomId] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
-  // Admin Editing States
-  const [isEditing, setIsEditing] = useState(false);
-  const [editablePhases, setEditablePhases] = useState<any[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
 
   // Broadcast States
   const [showAnnouncement, setShowAnnouncement] = useState(false);
@@ -31,7 +29,7 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
     params.then(p => setRoomId(p.id));
   }, [params]);
 
-  const { data: eventData, mutate } = useSWR(
+  const { data: eventData } = useSWR(
     roomId ? `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId}` : null, 
     fetcher, 
     { 
@@ -40,24 +38,22 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
     }
   );
 
-  const isOrganizer = session?.user?.email === eventData?.organizerSecret;
-
   // Load history and last seen TS from local storage
   useEffect(() => {
     if (roomId) {
       const localHistory = localStorage.getItem(`clock_history_${roomId}`);
-      if (localHistory) setHistory(JSON.parse(localHistory));
-      
       const lastTS = localStorage.getItem(`last_broadcast_${roomId}`);
-      if (lastTS) setLastAnnouncementTime(lastTS);
+      const timeout = setTimeout(() => {
+        if (localHistory) {
+          setHistory(JSON.parse(localHistory));
+        }
+        if (lastTS) {
+          setLastAnnouncementTime(lastTS);
+        }
+      }, 0);
+      return () => clearTimeout(timeout);
     }
   }, [roomId]);
-
-  useEffect(() => {
-    if (eventData?.phases && !isEditing) {
-      setEditablePhases(eventData.phases.map((p: any, i: number) => ({ ...p, id: p._id || i })));
-    }
-  }, [eventData, isEditing]);
 
   // Broadcast logic
   useEffect(() => {
@@ -68,31 +64,49 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
     if (isInitialLoad) {
       // On first load, if we already have a seen TS in state, don't trigger
       if (!lastAnnouncementTime && currentTS) {
-        setLastAnnouncementTime(currentTS);
-        localStorage.setItem(`last_broadcast_${roomId}`, currentTS);
+        const timeout = setTimeout(() => {
+          setLastAnnouncementTime(currentTS);
+          localStorage.setItem(`last_broadcast_${roomId}`, currentTS);
+        }, 0);
+        return () => clearTimeout(timeout);
       }
-      setIsInitialLoad(false);
-      return;
+      const timeout = setTimeout(() => {
+        setIsInitialLoad(false);
+      }, 0);
+      return () => clearTimeout(timeout);
     }
 
     if (currentTS && currentTS !== lastAnnouncementTime) {
-      setLastAnnouncementTime(currentTS);
-      localStorage.setItem(`last_broadcast_${roomId}`, currentTS);
+      const timestampTimeout = setTimeout(() => {
+        setLastAnnouncementTime(currentTS);
+        localStorage.setItem(`last_broadcast_${roomId}`, currentTS);
+      }, 0);
       
       if (eventData.announcement) {
         // Add to history
-        setHistory(prev => {
-          const newHistory = [eventData.announcement, ...prev.filter(h => h !== eventData.announcement)].slice(0, 10);
-          localStorage.setItem(`clock_history_${roomId}`, JSON.stringify(newHistory));
-          return newHistory;
-        });
+        const historyTimeout = setTimeout(() => {
+          setHistory(prev => {
+            const newHistory = [eventData.announcement, ...prev.filter(h => h !== eventData.announcement)].slice(0, 10);
+            localStorage.setItem(`clock_history_${roomId}`, JSON.stringify(newHistory));
+            return newHistory;
+          });
+        }, 0);
 
         // Show Overlay
-        setShowAnnouncement(true);
+        const announcementTimeout = setTimeout(() => {
+          setShowAnnouncement(true);
+        }, 0);
         const durationMs = (eventData.announcementDuration || 10) * 1000;
         const timer = setTimeout(() => setShowAnnouncement(false), durationMs);
-        return () => clearTimeout(timer);
+        return () => {
+          clearTimeout(timestampTimeout);
+          clearTimeout(historyTimeout);
+          clearTimeout(announcementTimeout);
+          clearTimeout(timer);
+        };
       }
+
+      return () => clearTimeout(timestampTimeout);
     }
   }, [eventData, isInitialLoad, lastAnnouncementTime, roomId]);
 
@@ -101,16 +115,21 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
     if (!eventData) return;
     if (eventData.status === 'PAUSED' && eventData.pausedRemainingMs) {
       const distance = eventData.pausedRemainingMs;
-      setTimeLeft({
-        hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((distance % (1000 * 60)) / 1000)
-      });
-      return; 
+      const timeout = setTimeout(() => {
+        setTimeLeft({
+          hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((distance % (1000 * 60)) / 1000)
+        });
+      }, 0);
+      return () => clearTimeout(timeout); 
     }
     if (!eventData.phaseEndTime || eventData.status !== 'RUNNING') {
       if (eventData.status === 'COMPLETED' || eventData.status === 'DRAFT') {
-        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        const timeout = setTimeout(() => {
+          setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        }, 0);
+        return () => clearTimeout(timeout);
       }
       return;
     }
@@ -129,30 +148,6 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
     const timer = setInterval(updateTimer, 1000);
     return () => clearInterval(timer);
   }, [eventData]);
-
-  const handleUpdatePhases = async () => {
-    setIsSaving(true);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          organizerSecret: session?.user?.email,
-          phases: editablePhases 
-        })
-      });
-      if (res.ok) {
-        await mutate();
-        setIsEditing(false);
-      } else {
-        alert("Failed to update phases structure.");
-      }
-    } catch {
-      alert("System error during structural update.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const formatTime = (time: number) => Math.max(0, time).toString().padStart(2, '0');
   
@@ -194,9 +189,12 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
       </button>
 
       {/* Sidebar Desktop/Mobile */}
-      <div className={`fixed inset-0 z-40 lg:relative lg:inset-auto lg:block ${isSidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-md lg:hidden" onClick={() => setIsSidebarOpen(false)} />
-        <div className="relative h-full w-72 shrink-0">
+      <div className={`fixed inset-0 z-40 lg:relative lg:inset-auto lg:block ${isSidebarOpen ? 'pointer-events-auto' : 'pointer-events-none'} lg:pointer-events-auto`}>
+        <div
+          className={`absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300 ease-out lg:hidden ${isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setIsSidebarOpen(false)}
+        />
+        <div className={`relative h-full w-72 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <Sidebar onNavItemClick={() => setIsSidebarOpen(false)} />
         </div>
       </div>
@@ -219,20 +217,9 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            {isOrganizer && (
-              <button 
-                onClick={() => setIsEditing(!isEditing)} 
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 ${isEditing ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-slate-400 hover:text-white border border-white/5'}`}
-              >
-                {isEditing ? <X size={14} /> : <Edit size={14} />}
-                {isEditing ? 'Discard' : 'Edit Flow'}
-              </button>
-            )}
-            <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+          <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Live</span>
-            </div>
           </div>
         </header>
 
@@ -250,11 +237,15 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
               </span>
             </div>
 
-            <div 
-              className="text-[clamp(4rem,22vw,14rem)] font-black tracking-tighter leading-none text-white font-mono my-6 md:my-10 text-center select-none" 
+            <div
+              className="my-6 md:my-10 flex items-center justify-center gap-1 sm:gap-2 text-center font-mono font-black leading-none text-white select-none"
               style={{ textShadow: `0 0 60px ${accent}30` }}
             >
-              {formatTime(timeLeft.hours)}:{formatTime(timeLeft.minutes)}:{formatTime(timeLeft.seconds)}
+              <span className="text-[clamp(2.8rem,16vw,10rem)] tracking-tight">{formatTime(timeLeft.hours)}</span>
+              <span className="text-[clamp(2rem,10vw,7rem)] text-slate-500">:</span>
+              <span className="text-[clamp(2.8rem,16vw,10rem)] tracking-tight">{formatTime(timeLeft.minutes)}</span>
+              <span className="text-[clamp(2rem,10vw,7rem)] text-slate-500">:</span>
+              <span className="text-[clamp(2.8rem,16vw,10rem)] tracking-tight">{formatTime(timeLeft.seconds)}</span>
             </div>
 
             <div className="flex flex-col items-center gap-2">
@@ -278,117 +269,46 @@ export default function ClockView({ params }: { params: Promise<{ id: string }> 
                 </div>
                 <h3 className="text-sm font-bold tracking-[0.2em] uppercase text-white">Event Flow</h3>
               </div>
-              {isEditing && (
-                <button 
-                  onClick={() => setEditablePhases([...editablePhases, { id: Date.now(), name: 'New Phase', durationMinutes: 60, autoTransition: false }])}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-blue-500 transition-all active:scale-95 shadow-lg"
-                >
-                  <Plus size={14} /> Add Phase
-                </button>
-              )}
             </div>
 
             <div className="relative">
-              {!isEditing ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-in">
-                  {eventData.phases.map((phase: any, index: number) => {
-                    if (index < eventData.currentPhaseIndex) return null; 
-                    const isCurrent = index === eventData.currentPhaseIndex;
-                    return (
-                      <div 
-                        key={index} 
-                        className={`glass rounded-3xl p-6 transition-all glass-hover group ${isCurrent ? 'border-blue-500/30 bg-blue-500/[0.03]' : 'border-white/5'}`}
-                      >
-                         <div className="flex justify-between items-start mb-4">
-                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                              Phase {String(index + 1).padStart(2, '0')}
-                            </span>
-                            {isCurrent && (
-                              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 rounded-full">
-                                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
-                                <span className="text-[8px] font-bold text-emerald-500 uppercase">Active</span>
-                              </div>
-                            )}
-                         </div>
-                         <h4 className={`text-xl font-bold mb-2 transition-colors ${isCurrent ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>
-                           {phase.name}
-                         </h4>
-                         <div className="flex items-center gap-2 text-slate-500 font-mono text-xs">
-                            <ClockIcon size={12} className="text-blue-400/60" />
-                            <span>{phase.durationMinutes} Minutes</span>
-                         </div>
-                         
-                         {isCurrent && (
-                           <div className="mt-6 w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                              <div className="h-full bg-blue-500 w-1/3"></div>
-                           </div>
-                         )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="space-y-4 bg-white/[0.02] border border-white/5 p-8 rounded-[2.5rem] animate-in slide-in-from-top-4 duration-500">
-                  <div className="flex items-center gap-3 mb-6">
-                    <AlertCircle size={16} className="text-blue-400" />
-                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.3em]">Master Sequence Override</p>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {editablePhases.map((phase, idx) => (
-                      <div key={phase.id} className="flex flex-col sm:flex-row items-center gap-6 bg-black/20 p-4 rounded-2xl border border-white/5 group hover:border-white/10 transition-all">
-                        <div className="flex-1 w-full">
-                          <input 
-                            type="text" 
-                            value={phase.name} 
-                            onChange={(e) => setEditablePhases(editablePhases.map(p => p.id === phase.id ? { ...p, name: e.target.value } : p))}
-                            className="bg-transparent border-none text-base font-bold text-white outline-none w-full focus:text-blue-400 transition-colors"
-                          />
-                        </div>
-                        <div className="flex items-center gap-6 shrink-0">
-                          <div className="flex items-center gap-3 bg-black/40 rounded-xl px-4 py-2 border border-white/5">
-                            <input 
-                              type="number" 
-                              value={phase.durationMinutes} 
-                              onChange={(e) => setEditablePhases(editablePhases.map(p => p.id === phase.id ? { ...p, durationMinutes: parseInt(e.target.value)||0 } : p))}
-                              className="w-12 bg-transparent text-sm font-mono font-bold text-white text-center outline-none"
-                            />
-                            <span className="text-[10px] text-slate-600 font-bold uppercase">Min</span>
-                          </div>
-                          
-                          <button 
-                            onClick={() => setEditablePhases(editablePhases.map(p => p.id === phase.id ? { ...p, autoTransition: !p.autoTransition } : p))}
-                            className={`px-4 py-2 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all ${phase.autoTransition ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/5 text-slate-500 border border-white/5'}`}
-                          >
-                            {phase.autoTransition ? 'Auto-Next' : 'Manual'}
-                          </button>
-                          
-                          <button onClick={() => setEditablePhases(editablePhases.filter(p => p.id !== phase.id))} className="p-2 text-slate-600 hover:text-rose-400 transition-colors">
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-8 flex justify-end gap-4">
-                    <button 
-                      onClick={() => setIsEditing(false)} 
-                      className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-all"
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-in">
+                {eventData.phases.map((phase: Phase, index: number) => {
+                  if (index < eventData.currentPhaseIndex) return null; 
+                  const isCurrent = index === eventData.currentPhaseIndex;
+                  return (
+                    <div 
+                      key={index} 
+                      className={`glass rounded-3xl p-6 transition-all glass-hover group ${isCurrent ? 'border-blue-500/30 bg-blue-500/[0.03]' : 'border-white/5'}`}
                     >
-                      Cancel Changes
-                    </button>
-                    <button 
-                      onClick={handleUpdatePhases} 
-                      disabled={isSaving}
-                      className="px-10 py-3 bg-blue-600 text-white rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-blue-500 disabled:opacity-50 transition-all shadow-xl active:scale-95 flex items-center gap-2"
-                    >
-                      {isSaving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
-                      {isSaving ? 'Synchronizing...' : 'Commit Sequence'}
-                    </button>
-                  </div>
-                </div>
-              )}
+                       <div className="flex justify-between items-start mb-4">
+                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                            Phase {String(index + 1).padStart(2, '0')}
+                          </span>
+                          {isCurrent && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 rounded-full">
+                              <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
+                              <span className="text-[8px] font-bold text-emerald-500 uppercase">Active</span>
+                            </div>
+                          )}
+                       </div>
+                       <h4 className={`text-xl font-bold mb-2 transition-colors ${isCurrent ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                         {phase.name}
+                       </h4>
+                       <div className="flex items-center gap-2 text-slate-500 font-mono text-xs">
+                          <ClockIcon size={12} className="text-blue-400/60" />
+                          <span>{phase.durationMinutes} Minutes</span>
+                       </div>
+                       
+                       {isCurrent && (
+                         <div className="mt-6 w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 w-1/3"></div>
+                         </div>
+                       )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
