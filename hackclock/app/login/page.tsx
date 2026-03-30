@@ -53,7 +53,7 @@ export default function LoginPage() {
         
         // Route directly to the clock UI
         router.push(`/room/${roomId.toUpperCase()}/clock`);
-      } catch (err) {
+      } catch {
         setError('CONNECTION FAULT: Unable to reach server.');
       }
       setIsLoading(false);
@@ -99,7 +99,7 @@ export default function LoginPage() {
         } else {
           router.push('/dashboard');
         }
-      } catch (err) {
+      } catch {
         setError('SECURITY FAULT: Unable to reach server.');
       }
       setIsLoading(false);
@@ -365,13 +365,13 @@ export default function LoginPage() {
                 </div>
 
                 <div className="flex gap-4">
-                  <button type="button" className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#0D1117] border border-[#30363D] rounded-md hover:bg-[#21262D] transition-colors text-xs font-bold text-[#8B949E] hover:text-white uppercase tracking-wider">
+                  <button
+                    type="button"
+                    onClick={() => signIn('github', { callbackUrl: '/dashboard' })}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#0D1117] border border-[#30363D] rounded-md hover:bg-[#21262D] transition-colors text-xs font-bold text-[#8B949E] hover:text-white uppercase tracking-wider"
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.02c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A4.8 4.8 0 0 0 8 18v4"></path><path d="M12 18v4"></path></svg>
                     GitHub
-                  </button>
-                  <button type="button" className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#0D1117] border border-[#30363D] rounded-md hover:bg-[#21262D] transition-colors text-xs font-bold text-[#8B949E] hover:text-white uppercase tracking-wider">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FC6D26" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 13.29-3.33-10a.42.42 0 0 0-.14-.18.38.38 0 0 0-.22-.11.39.39 0 0 0-.23.07.42.42 0 0 0-.14.18L2 13.29a.74.74 0 0 0 .27.83L12 21l9.69-6.88a.71.71 0 0 0 .31-.83Z"></path></svg>
-                    GitLab
                   </button>
                 </div>
               </>
