@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,17 +20,20 @@ export const metadata: Metadata = {
   description: "Terminal Session Authentication and Hackathon Management",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authOptions);
+
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0D1117] text-[#E6EDF3]`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased text-slate-200`}
+        suppressHydrationWarning
       >
-        <AuthProvider>
+        <AuthProvider session={session}>
           {children}
         </AuthProvider>
       </body>

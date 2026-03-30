@@ -30,15 +30,32 @@ export default function LoginPage() {
     
     // --- GUEST FLOW ---
     if (activeTab === 'GUEST') {
-      // Save local session to keep them connected
-      localStorage.setItem('hackclock_guest', JSON.stringify({ 
-        teamName, 
-        roomId: roomId.toUpperCase(),
-        joinedAt: new Date().toISOString()
-      }));
-      
-      // Route directly to the clock UI
-      router.push(`/room/${roomId.toUpperCase()}/clock`);
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${roomId.toUpperCase()}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teamName }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          setError(`CONNECTION FAULT: ${data.error || 'Could not join room'}`);
+          setIsLoading(false);
+          return;
+        }
+
+        // Save local session to keep them connected
+        localStorage.setItem('hackclock_guest', JSON.stringify({ 
+          teamName, 
+          roomId: roomId.toUpperCase(),
+          joinedAt: new Date().toISOString()
+        }));
+        
+        // Route directly to the clock UI
+        router.push(`/room/${roomId.toUpperCase()}/clock`);
+      } catch (err) {
+        setError('CONNECTION FAULT: Unable to reach server.');
+      }
       setIsLoading(false);
       return;
     } 

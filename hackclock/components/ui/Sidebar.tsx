@@ -4,9 +4,13 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { LayoutGrid, Clock, Network, Monitor, XCircle, UserPlus } from 'lucide-react';
+import { LayoutGrid, Clock, Network, Monitor, XCircle, UserPlus, X } from 'lucide-react';
 
-export default function Sidebar() {
+interface SidebarProps {
+  onNavItemClick?: () => void;
+}
+
+export default function Sidebar({ onNavItemClick }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, update } = useSession();
@@ -18,11 +22,13 @@ export default function Sidebar() {
 
   useEffect(() => {
     // 1. Check for Organizer Session First
-    const sessionRoom = (session?.user as any)?.activeRoomId;
+    const sessionRoom = (session?.user as { activeRoomId?: string })?.activeRoomId;
     if (sessionRoom) {
-      setCurrentRoomId(sessionRoom);
-      setIsGuest(false);
-      return;
+      const timeout = setTimeout(() => {
+        setCurrentRoomId(sessionRoom);
+        setIsGuest(false);
+      }, 0);
+      return () => clearTimeout(timeout);
     }
 
     // 2. Check for Guest Session Fallback
@@ -55,6 +61,7 @@ export default function Sidebar() {
       });
       await update({ activeRoomId: null });
     }
+    onNavItemClick?.();
   };
 
   const handleJoinSession = async () => {
@@ -79,6 +86,7 @@ export default function Sidebar() {
     } catch (err) {
       alert("System Error: Network connection failed.");
     }
+    onNavItemClick?.();
   };
 
   // Restrict Nav Items based on Role
@@ -90,41 +98,56 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-[#0D1117] border-r border-[#30363D] flex flex-col z-20 h-screen shrink-0">
-      <div className="h-16 flex items-center px-6 border-b border-[#30363D]">
-        <h2 className="text-white font-bold tracking-tight">HackClock</h2>
+    <aside className="w-full h-full bg-[#0A0A0B]/80 backdrop-blur-2xl border-r border-white/5 flex flex-col z-20 overflow-y-auto">
+      <div className="h-20 flex items-center justify-between px-8 border-b border-white/5 shrink-0">
+        <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center">
+            <Clock size={14} className="text-white" />
+          </div>
+          HackClock
+        </h2>
+        <button className="lg:hidden text-slate-400 hover:text-white transition-colors" onClick={onNavItemClick}>
+          <X size={20} />
+        </button>
       </div>
       
-      <div className="px-6 py-4 border-b border-[#30363D]">
+      <div className="px-6 py-6 border-b border-white/5">
         {currentRoomId ? (
-          <div className="bg-[#161B22] p-3 rounded-md border border-[#4493F8] shadow-[0_0_10px_rgba(68,147,248,0.15)] relative group">
-            <p className="text-[10px] text-[#4493F8] uppercase font-bold tracking-wider mb-1 flex items-center gap-2">
-               <span className="w-1.5 h-1.5 rounded-full bg-[#4493F8] animate-pulse"></span> 
-               {isGuest ? 'GUEST SESSION' : 'ACTIVE SESSION'}
+          <div className="glass p-4 rounded-2xl border-blue-500/20 shadow-[0_8px_32px_rgba(0,112,243,0.1)] relative group overflow-hidden">
+            {/* <div className="absolute top-0 right-0 p-2 opacity-10">
+              <Network size={40} className="text-blue-500" />
+            </div> */}
+            <p className="text-[9px] text-blue-400 uppercase font-bold tracking-[0.15em] mb-1.5 flex items-center gap-2">
+               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span> 
+               {isGuest ? 'GUEST NODE' : 'ACTIVE HACKATHON'}
             </p>
-            <p className="text-sm text-white font-mono tracking-widest">{currentRoomId}</p>
-            {isGuest && <p className="text-[10px] text-[#8B949E] uppercase tracking-wider mt-1 truncate">{guestName}</p>}
+            <p className="text-sm text-white font-mono tracking-widest truncate font-semibold">{currentRoomId}</p>
+            {isGuest && <p className="text-[10px] text-slate-500 font-medium mt-1 truncate">{guestName}</p>}
             
-            <button onClick={handleDisconnect} className="absolute right-3 top-4 text-[#8B949E] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={handleDisconnect} className="absolute right-3 top-3 text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-all">
                <XCircle size={16} />
             </button>
           </div>
         ) : (
-          <div className="bg-[#2D1A1E] p-3 rounded-md border border-red-900">
-            <p className="text-[10px] text-red-500 uppercase font-bold tracking-wider mb-1">NO CONNECTION</p>
-            <p className="text-xs text-[#8B949E]">Join a room to activate Terminal.</p>
+          <div className="bg-rose-500/5 p-4 rounded-2xl border border-rose-500/10">
+            <p className="text-[9px] text-rose-500 uppercase font-bold tracking-[0.15em] mb-1">OFFLINE</p>
+            <p className="text-[11px] text-slate-500 font-medium leading-relaxed">No active connection. Join a room to begin.</p>
           </div>
         )}
       </div>
 
-      <nav className="flex-1 py-4 overflow-y-auto">
-        <ul className="space-y-1 px-3">
+      <nav className="flex-1 py-6 px-4">
+        <ul className="space-y-1.5">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href) && item.href !== '/';
             return (
               <li key={item.name}>
-                <Link href={item.href} className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-bold tracking-wide transition-all ${isActive ? 'bg-[#161B22] text-[#4493F8] border border-[#30363D]' : 'text-[#8B949E] border border-transparent hover:text-white hover:bg-[#161B22]/50'}`}>
-                  <item.icon size={16} className={isActive ? "text-[#4493F8]" : "text-[#8B949E]"} />
+                <Link 
+                  href={item.href} 
+                  onClick={onNavItemClick}
+                  className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition-all group ${isActive ? 'bg-blue-600/10 text-blue-400 shadow-[inset_0_0_20px_rgba(0,112,243,0.05)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                >
+                  <item.icon size={18} className={isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300 transition-colors"} />
                   {item.name}
                 </Link>
               </li>
@@ -135,12 +158,12 @@ export default function Sidebar() {
 
       {/* Show Join Button if NOT already in a room */}
       {!currentRoomId && (
-        <div className="p-4 border-t border-[#30363D] bg-[#0D1117]">
+        <div className="p-6 border-t border-white/5 bg-[#0A0A0B]/40">
           <button 
             onClick={handleJoinSession}
-            className="w-full py-2.5 bg-transparent border border-[#30363D] text-[#8B949E] rounded-md font-bold text-xs hover:border-[#8B949E] hover:text-white transition-colors flex justify-center items-center gap-2 tracking-wider uppercase"
+            className="w-full py-3 bg-white/5 border border-white/5 text-slate-300 rounded-xl font-bold text-[10px] hover:bg-white/10 hover:text-white transition-all flex justify-center items-center gap-2 tracking-[0.1em] uppercase shadow-lg active:scale-95"
           >
-            <UserPlus size={14} /> Join Session
+            <UserPlus size={14} /> Connect Terminal
           </button>
         </div>
       )}

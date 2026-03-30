@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { NextAuthOptions } from "next-auth";
 
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Terminal Credentials",
@@ -63,9 +64,9 @@ const handler = NextAuth({
     },
     async session({ session, token }: any) {
       if (session.user) {
-        session.user.name = token.name;
-        session.user.image = token.picture;
-        session.user.activeRoomId = token.activeRoomId;
+        session.user.name = token.name as string;
+        session.user.image = token.picture as string;
+        (session.user as any).activeRoomId = token.activeRoomId;
       }
       return session;
     }
@@ -77,6 +78,8 @@ const handler = NextAuth({
     strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
