@@ -1,7 +1,12 @@
 import { Clock, LayoutGrid, Network } from "lucide-react";
 
 function SkeletonBlock({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-2xl bg-white/[0.06] ${className}`} />;
+  return (
+    <div className={`relative overflow-hidden rounded-2xl bg-white/[0.06] ${className}`}>
+      <div className="absolute inset-0 animate-pulse bg-white/[0.04]" />
+      <div className="skeleton-highlight absolute inset-y-0 -left-1/2 w-1/2" />
+    </div>
+  );
 }
 
 export function StandbyPageSkeleton({ icon = Clock }: { icon?: typeof Clock }) {
