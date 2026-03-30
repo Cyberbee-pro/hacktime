@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { Network, Play, Pause, FastForward, Megaphone, Terminal, CheckCircle2, Square, Trash2, ChevronDown, History, AlertTriangle, RefreshCw, Clock, Monitor } from 'lucide-react';
+import { Network, Play, Pause, FastForward, Megaphone, Terminal, CheckCircle2, Square, Trash2, ChevronDown, History, AlertTriangle, RefreshCw, Clock, Monitor, Edit, XCircle } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -18,6 +18,10 @@ interface HackathonFlow {
   branding?: { accentColor?: string; logoUrl?: string };
   participants?: Array<{ teamName: string }>;
   updatedAt: string;
+}
+
+interface Participant {
+  teamName: string;
 }
 
 export default function DashboardPage() {
@@ -136,6 +140,22 @@ export default function DashboardPage() {
     } catch { alert("System Error: Could not connect to Master Node."); }
   };
 
+  const handleDisconnectTerminal = async () => {
+    if (!userEmail || !activeRoomId) return;
+
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/active-room`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, roomId: null })
+      });
+      await update({ activeRoomId: null });
+      mutateActive();
+    } catch {
+      alert("System Error: Could not disconnect terminal.");
+    }
+  };
+
   const activeFlows = allFlows?.filter((f) => f.status === 'RUNNING' || f.status === 'PAUSED') || [];
   const drafts = allFlows?.filter((f) => f.status === 'DRAFT') || [];
   const completed = allFlows?.filter((f) => f.status === 'COMPLETED') || [];
@@ -177,7 +197,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 stagger-in">
-            {activeFlows.map((flow: any) => (
+            {activeFlows.map((flow) => (
               <div
                 key={flow.roomId}
                 className="glass rounded-3xl p-8 relative overflow-hidden group transition-all glass-hover border-white/5 shadow-2xl"
@@ -236,6 +256,15 @@ export default function DashboardPage() {
                   </button>
                 </div>
 
+                <div className="mt-4">
+                  <Link
+                    href={`/flow?edit=${flow.roomId}`}
+                    className="inline-flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] hover:text-white transition-colors"
+                  >
+                    <Edit size={12} /> Edit Flow
+                  </Link>
+                </div>
+
                 <Link href={flow.roomId === activeRoomId ? "#active-control" : `/room/${flow.roomId}/clock`} onClick={async () => { if (flow.roomId !== activeRoomId) await update({ activeRoomId: flow.roomId }); }} className="block mt-6 text-center text-[11px] font-bold text-blue-400 uppercase tracking-[0.2em] hover:text-blue-300 transition-colors">
                   {flow.roomId === activeRoomId ? "● Currently Linked" : "Connect to Terminal"}
                 </Link>
@@ -257,6 +286,18 @@ export default function DashboardPage() {
                 <h2 className="text-xl font-bold text-white">{activeEvent.name}</h2>
                 <p className="text-xs text-slate-500 font-medium">Live Control Interface</p>
               </div>
+              <Link
+                href={`/flow?edit=${activeEvent.roomId}`}
+                className="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/5 text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white/10 hover:text-white transition-all"
+              >
+                <Edit size={14} /> Edit Flow
+              </Link>
+              <button
+                onClick={handleDisconnectTerminal}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-rose-500/15 hover:text-rose-200 transition-all"
+              >
+                <XCircle size={14} /> Disconnect Terminal
+              </button>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-12">
@@ -334,7 +375,7 @@ export default function DashboardPage() {
                   <RefreshCw size={12} className="text-slate-600 hover:text-blue-400 cursor-pointer transition-colors" onClick={() => mutateActive()} />
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-3xl p-6 h-[280px] overflow-y-auto space-y-3 custom-scrollbar">
-                  {activeEvent.participants?.map((p: any, i: number) => (
+                  {activeEvent.participants?.map((p: Participant, i: number) => (
                     <div key={i} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0 group">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
                       <span className="text-sm text-slate-200 font-medium truncate group-hover:text-white transition-colors">{p.teamName}</span>
@@ -365,7 +406,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {drafts.map((flow: any) => (
+            {drafts.map((flow) => (
               <div key={flow.roomId} className="glass rounded-2xl p-6 flex flex-col justify-between glass-hover border-white/5 group relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
                   <Terminal size={64} />
@@ -383,7 +424,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-3 mb-6">
                     <div className="flex items-center gap-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                      <Clock size={12} /> {flow.phases.reduce((acc: number, p: any) => acc + p.durationMinutes, 0)}m
+                      <Clock size={12} /> {flow.phases.reduce((acc: number, p) => acc + p.durationMinutes, 0)}m
                     </div>
                     <div className="w-1 h-1 rounded-full bg-slate-700"></div>
                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
@@ -429,7 +470,7 @@ export default function DashboardPage() {
         {isArchiveOpen && (
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
             {completed.length === 0 && <p className="text-xs text-slate-600 italic p-6">Archive is currently empty.</p>}
-            {completed.map((flow: any) => (
+            {completed.map((flow) => (
               <div key={flow.roomId} className="glass border-white/5 rounded-2xl p-5 flex justify-between items-center group hover:bg-white/[0.04] transition-all">
                 <div className="flex items-center gap-4">
                   <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-400">

@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
-import { LayoutGrid, Clock, Network, Monitor, XCircle, UserPlus, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { LayoutGrid, Clock, Network, Monitor, XCircle, X } from 'lucide-react';
+import JoinRoomControls from '@/components/ui/JoinRoomControls';
 
 interface SidebarProps {
   onNavItemClick?: () => void;
@@ -14,11 +15,13 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, update } = useSession();
+  const stageTransitionTimeoutRef = useRef<number | null>(null);
   
   // Dynamic State for both Organizers and Guests
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [guestName, setGuestName] = useState("");
+  const [isStageTransitioning, setIsStageTransitioning] = useState(false);
 
   useEffect(() => {
     // 1. Check for Organizer Session First
@@ -37,15 +40,31 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
       try {
         const parsed = JSON.parse(guestData);
         if (parsed.roomId) {
-          setCurrentRoomId(parsed.roomId);
-          setIsGuest(true);
-          setGuestName(parsed.teamName || "Guest");
+          const timeout = setTimeout(() => {
+            setCurrentRoomId(parsed.roomId);
+            setIsGuest(true);
+            setGuestName(parsed.teamName || "Guest");
+          }, 0);
+          return () => clearTimeout(timeout);
         }
-      } catch (e) { console.error("Guest session parse failed"); }
+      } catch { console.error("Guest session parse failed"); }
     } else {
-      setCurrentRoomId(null);
+      const timeout = setTimeout(() => {
+        setCurrentRoomId(null);
+        setIsGuest(false);
+        setGuestName("");
+      }, 0);
+      return () => clearTimeout(timeout);
     }
   }, [session]);
+
+  useEffect(() => {
+    return () => {
+      if (stageTransitionTimeoutRef.current) {
+        window.clearTimeout(stageTransitionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleDisconnect = async () => {
     if (isGuest) {
@@ -64,41 +83,31 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
     onNavItemClick?.();
   };
 
-  const handleJoinSession = async () => {
-    const targetRoom = window.prompt("Enter Target Room ID:");
-    if (!targetRoom) return;
-    
-    const teamName = window.prompt("Enter your Team/Participant Name:") || "Guest Terminal";
-
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${targetRoom.toUpperCase()}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teamName })
-      });
-
-      if (res.ok) {
-        localStorage.setItem('hackclock_guest', JSON.stringify({ teamName, roomId: targetRoom.toUpperCase() }));
-        window.location.href = `/room/${targetRoom.toUpperCase()}/clock`; // Hard redirect to force state sync
-      } else {
-        alert("SECURITY FAULT: Room not found or connection rejected.");
-      }
-    } catch (err) {
-      alert("System Error: Network connection failed.");
-    }
-    onNavItemClick?.();
-  };
-
   // Restrict Nav Items based on Role
   const navItems = [
     ...(!isGuest ? [{ name: 'Dashboard', href: '/dashboard', icon: LayoutGrid }] : []),
-    { name: 'Clock View', href: currentRoomId ? `/room/${currentRoomId}/clock` : '/clock', icon: Clock },
     ...(!isGuest ? [{ name: 'Flow Creation', href: '/flow', icon: Network }] : []),
+    { name: 'Clock View', href: currentRoomId ? `/room/${currentRoomId}/clock` : '/clock', icon: Clock },
     { name: 'Stage Mode', href: currentRoomId ? `/room/${currentRoomId}/stage` : '/stage', icon: Monitor },
   ];
 
+  const handleNavClick = (href: string) => {
+    const shouldAnimateStageExit = href.startsWith('/room/') && href.endsWith('/stage') && pathname !== href;
+
+    if (!shouldAnimateStageExit) {
+      onNavItemClick?.();
+      return;
+    }
+
+    setIsStageTransitioning(true);
+    stageTransitionTimeoutRef.current = window.setTimeout(() => {
+      router.push(href);
+      onNavItemClick?.();
+    }, 220);
+  };
+
   return (
-    <aside className="w-full h-full bg-[#0A0A0B]/80 backdrop-blur-2xl border-r border-white/5 flex flex-col z-20 overflow-y-auto">
+    <aside className={`w-full h-full bg-[#0A0A0B]/80 backdrop-blur-2xl border-r border-white/5 flex flex-col z-20 overflow-y-auto transition-all duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${isStageTransitioning ? '-translate-x-full opacity-0 scale-[0.98]' : 'translate-x-0 opacity-100 scale-100'}`}>
       <div className="h-20 flex items-center justify-between px-8 border-b border-white/5 shrink-0">
         <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
           <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -144,7 +153,16 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
               <li key={item.name}>
                 <Link 
                   href={item.href} 
-                  onClick={onNavItemClick}
+                  onClick={(e) => {
+                    const shouldAnimateStageExit = item.name === 'Stage Mode' && item.href.startsWith('/room/') && item.href.endsWith('/stage');
+
+                    if (shouldAnimateStageExit) {
+                      e.preventDefault();
+                      handleNavClick(item.href);
+                      return;
+                    }
+                    onNavItemClick?.();
+                  }}
                   className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition-all group ${isActive ? 'bg-blue-600/10 text-blue-400 shadow-[inset_0_0_20px_rgba(0,112,243,0.05)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                 >
                   <item.icon size={18} className={isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300 transition-colors"} />
@@ -159,12 +177,14 @@ export default function Sidebar({ onNavItemClick }: SidebarProps) {
       {/* Show Join Button if NOT already in a room */}
       {!currentRoomId && (
         <div className="p-6 border-t border-white/5 bg-[#0A0A0B]/40">
-          <button 
-            onClick={handleJoinSession}
+          <JoinRoomControls
+            mode="modal"
+            title="Connect Terminal"
+            description="Join an active hackathon with a room ID. We’ll route you straight into the live clock view."
+            buttonLabel="Connect Terminal"
+            onSuccess={onNavItemClick}
             className="w-full py-3 bg-white/5 border border-white/5 text-slate-300 rounded-xl font-bold text-[10px] hover:bg-white/10 hover:text-white transition-all flex justify-center items-center gap-2 tracking-[0.1em] uppercase shadow-lg active:scale-95"
-          >
-            <UserPlus size={14} /> Connect Terminal
-          </button>
+          />
         </div>
       )}
     </aside>

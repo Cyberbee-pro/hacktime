@@ -54,12 +54,15 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
     // 1. History Tracking logic (Fire once per unique timestamp)
     if (eventData.announcementTimestamp && eventData.announcementTimestamp !== lastAnnouncementTime) {
       if (eventData.announcement) {
-        setHistory(prev => {
-          if (prev.includes(eventData.announcement)) return prev;
-          const newHistory = [eventData.announcement, ...prev].slice(0, 10);
-          localStorage.setItem(`stage_history_${roomId}`, JSON.stringify(newHistory));
-          return newHistory;
-        });
+        const timeout = setTimeout(() => {
+          setHistory(prev => {
+            if (prev.includes(eventData.announcement)) return prev;
+            const newHistory = [eventData.announcement, ...prev].slice(0, 10);
+            localStorage.setItem(`stage_history_${roomId}`, JSON.stringify(newHistory));
+            return newHistory;
+          });
+        }, 0);
+        return () => clearTimeout(timeout);
       }
     }
 
@@ -76,10 +79,13 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
     if (eventData.announcementTimestamp && eventData.announcementTimestamp !== lastAnnouncementTime) {
       setTimeout(() => setLastAnnouncementTime(eventData.announcementTimestamp), 0);
       if (eventData.announcement) {
-        setShowAnnouncement(true);
+        const announcementTimeout = setTimeout(() => setShowAnnouncement(true), 0);
         const durationMs = (eventData.announcementDuration || 10) * 1000;
         const timer = setTimeout(() => setShowAnnouncement(false), durationMs);
-        return () => clearTimeout(timer);
+        return () => {
+          clearTimeout(announcementTimeout);
+          clearTimeout(timer);
+        };
       }
     }
   }, [eventData, isInitialLoad, lastAnnouncementTime, roomId]);

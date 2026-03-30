@@ -34,14 +34,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar - Responsive logic handled within Sidebar or here */}
       <div className={`
         fixed inset-0 z-40 lg:relative lg:inset-auto lg:block
-        ${isSidebarOpen ? 'block' : 'hidden'}
+        ${isSidebarOpen ? 'pointer-events-auto' : 'pointer-events-none'}
+        lg:pointer-events-auto
       `}>
         {/* Backdrop for mobile */}
         <div
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm lg:hidden"
+          className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ease-out lg:hidden ${isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}
           onClick={() => setIsSidebarOpen(false)}
         />
-        <div className="relative h-full w-64">
+        <div className={`relative h-full w-64 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <Sidebar onNavItemClick={() => setIsSidebarOpen(false)} />
         </div>
       </div>
