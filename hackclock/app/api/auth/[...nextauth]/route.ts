@@ -64,14 +64,23 @@ export const authOptions: NextAuthOptions = {
       }
       
       if (trigger === "update" && session) {
-        const updatedSession = session as Session;
+        const updatedSession = session as Session & {
+          name?: string;
+          image?: string;
+          activeRoomId?: string | null;
+        };
         const updatedUser = updatedSession.user as (Session["user"] & {
-          activeRoomId?: string;
+          activeRoomId?: string | null;
         }) | undefined;
 
-        if (updatedUser?.name) authToken.name = updatedUser.name;
-        if (updatedUser?.image) authToken.picture = updatedUser.image;
-        if (updatedUser?.activeRoomId !== undefined) authToken.activeRoomId = updatedUser.activeRoomId;
+        const nextName = updatedUser?.name ?? updatedSession.name;
+        const nextImage = updatedUser?.image ?? updatedSession.image;
+        const hasRootActiveRoom = Object.prototype.hasOwnProperty.call(updatedSession, "activeRoomId");
+        const nextActiveRoomId = updatedUser?.activeRoomId ?? (hasRootActiveRoom ? updatedSession.activeRoomId : undefined);
+
+        if (nextName) authToken.name = nextName;
+        if (nextImage) authToken.picture = nextImage;
+        if (nextActiveRoomId !== undefined) authToken.activeRoomId = nextActiveRoomId ?? undefined;
       }
       
       return authToken;
