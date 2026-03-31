@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import useSWR from 'swr';
@@ -13,11 +13,12 @@ interface HackathonFlow {
   roomId: string;
   name: string;
   status: 'DRAFT' | 'RUNNING' | 'PAUSED' | 'COMPLETED';
-  currentPhaseIndex: number;
-  phases: Array<{ name: string; durationMinutes: number }>;
+  currentPhaseIndex?: number;
+  phases?: Array<{ name: string; durationMinutes: number }>;
   branding?: { accentColor?: string; logoUrl?: string };
   participants?: Array<{ teamName: string }>;
   updatedAt: string;
+  error?: string;
 }
 
 interface Participant {
@@ -26,6 +27,7 @@ interface Participant {
 
 export default function DashboardPage() {
   const { data: session, update } = useSession();
+  const lastClearedRoomRef = useRef<string | null>(null);
   const activeRoomId = (session?.user as { activeRoomId?: string })?.activeRoomId;
   const userEmail = session?.user?.email;
 
@@ -61,6 +63,29 @@ export default function DashboardPage() {
     fetcher,
     { refreshInterval: 2000 }
   );
+
+  const isValidActiveEvent = (event: HackathonFlow | undefined): event is HackathonFlow => {
+    return Boolean(event && Array.isArray(event.phases));
+  };
+
+  const activeControlEvent =
+    activeRoomId && isValidActiveEvent(activeEvent) && activeEvent.roomId === activeRoomId
+      ? activeEvent
+      : null;
+
+  useEffect(() => {
+    if (!activeRoomId || !activeEvent) return;
+
+    if (!isValidActiveEvent(activeEvent) || activeEvent.roomId !== activeRoomId) {
+      if (lastClearedRoomRef.current !== activeRoomId) {
+        lastClearedRoomRef.current = activeRoomId;
+        update({ activeRoomId: null });
+      }
+      return;
+    }
+
+    lastClearedRoomRef.current = null;
+  }, [activeRoomId, activeEvent, update]);
 
   useEffect(() => {
     const history = localStorage.getItem('broadcast_history');
@@ -112,8 +137,8 @@ export default function DashboardPage() {
       });
       mutateAll();
       if (roomId === activeRoomId) {
-        mutateActive();
         await update({ activeRoomId: null });
+        mutateActive();
       }
     } catch { alert("System Error: Deletion failed."); }
   };
@@ -275,7 +300,7 @@ export default function DashboardPage() {
       </section>
 
       {/* 4. Global Control */}
-      {activeEvent && activeEvent.status !== 'COMPLETED' && (
+      {activeControlEvent && activeControlEvent.status !== 'COMPLETED' && (
         <section id="active-control" className="glass rounded-[2.5rem] p-10 border-blue-500/10 shadow-[0_32px_64px_rgba(0,0,0,0.4)] relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-10">
@@ -283,11 +308,11 @@ export default function DashboardPage() {
                 <Terminal size={20} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">{activeEvent.name}</h2>
+                <h2 className="text-xl font-bold text-white">{activeControlEvent.name}</h2>
                 <p className="text-xs text-slate-500 font-medium">Live Control Interface</p>
               </div>
               <Link
-                href={`/flow?edit=${activeEvent.roomId}`}
+                href={`/flow?edit=${activeControlEvent.roomId}`}
                 className="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/5 text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white/10 hover:text-white transition-all"
               >
                 <Edit size={14} /> Edit Flow
@@ -304,9 +329,9 @@ export default function DashboardPage() {
               <div className="flex-1 space-y-10">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    { label: 'Status', value: activeEvent.status, sub: 'Current State' },
-                    { label: 'Phase', value: activeEvent.phases[activeEvent.currentPhaseIndex]?.name || "N/A", sub: 'Phase Execution' },
-                    { label: 'Teams', value: activeEvent.participants?.length || 0, sub: 'Total Connected' },
+                    { label: 'Status', value: activeControlEvent.status, sub: 'Current State' },
+                    { label: 'Phase', value: activeControlEvent.phases?.[activeControlEvent.currentPhaseIndex ?? 0]?.name || "N/A", sub: 'Phase Execution' },
+                    { label: 'Teams', value: activeControlEvent.participants?.length || 0, sub: 'Total Connected' },
                     { label: 'Node ID', value: activeRoomId, sub: 'Active Room' },
                   ].map((item, i) => (
                     <div key={i} className="bg-black/20 p-5 rounded-2xl border border-white/5">
@@ -375,13 +400,13 @@ export default function DashboardPage() {
                   <RefreshCw size={12} className="text-slate-600 hover:text-blue-400 cursor-pointer transition-colors" onClick={() => mutateActive()} />
                 </div>
                 <div className="bg-black/20 border border-white/5 rounded-3xl p-6 h-[280px] overflow-y-auto space-y-3 custom-scrollbar">
-                  {activeEvent.participants?.map((p: Participant, i: number) => (
+                  {activeControlEvent.participants?.map((p: Participant, i: number) => (
                     <div key={i} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0 group">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
                       <span className="text-sm text-slate-200 font-medium truncate group-hover:text-white transition-colors">{p.teamName}</span>
                     </div>
                   ))}
-                  {(!activeEvent.participants || activeEvent.participants.length === 0) && (
+                  {(!activeControlEvent.participants || activeControlEvent.participants.length === 0) && (
                     <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
                       <Monitor size={32} className="mb-2 text-slate-600" />
                       <p className="text-[11px] text-slate-500 font-medium">Listening for nodes...</p>
@@ -424,11 +449,11 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-3 mb-6">
                     <div className="flex items-center gap-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                      <Clock size={12} /> {flow.phases.reduce((acc: number, p) => acc + p.durationMinutes, 0)}m
+                      <Clock size={12} /> {flow.phases?.reduce((acc: number, p) => acc + p.durationMinutes, 0) ?? 0}m
                     </div>
                     <div className="w-1 h-1 rounded-full bg-slate-700"></div>
                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                      {flow.phases.length} Phases
+                      {flow.phases?.length ?? 0} Phases
                     </div>
                   </div>
                 </div>
