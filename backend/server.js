@@ -1,8 +1,8 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const routes = require('./routes/index');
+const connectDB = require('./lib/connectDB');
 
 const app = express();
 
@@ -23,21 +23,30 @@ app.get('/', (req, res) => {
 
 
 // Connect Master Router
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error('MongoDB Cluster Connection Error:', error);
+    res.status(500).json({ error: 'Database connection failed.' });
+  }
+});
+
 app.use('/api', routes);
 
-// Connect directly to your existing MongoDB Cluster via .env
-const mongoURI = process.env.MONGODB_URI;
+const PORT = process.env.PORT || 5000;
 
-if (!mongoURI) {
-  console.error("FATAL FAULT: MONGODB_URI is missing from your .env file!");
-  process.exit(1);
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, async () => {
+    try {
+      await connectDB();
+      console.log(`Core Backend Engine Online: Port ${PORT}`);
+    } catch (error) {
+      console.error('MongoDB Cluster Connection Error:', error);
+      process.exit(1);
+    }
+  });
 }
 
-mongoose.connect(mongoURI)
-  .then(() => console.log('MongoDB Secure Cluster Connection Established'))
-  .catch(err => console.error('MongoDB Cluster Connection Error:', err));
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Core Backend Engine Online: Port ${PORT}`);
-});
+module.exports = app;

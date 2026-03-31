@@ -1,48 +1,150 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, Suspense, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { Network, Plus, Trash2, Zap, Save, GripVertical, CheckCircle2, Copy, Image as ImageIcon } from 'lucide-react';
+import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Network, Plus, Trash2, Zap, Save, GripVertical, CheckCircle2, Copy, Image as ImageIcon, Loader2, ArrowLeft, Clock, Calendar, Globe, Palette, Settings2, Sparkles, ChevronRight, Activity, AlertTriangle, Wand2, RefreshCw } from 'lucide-react';
 
-export default function FlowPage() {
+function FlowForm() {
   const { data: session, update } = useSession();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const editId = searchParams.get('edit');
+
   const [isDeploying, setIsDeploying] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(!!editId);
   const [generatedRoom, setGeneratedRoom] = useState<{ id: string, secret: string } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
-    name: 'GitCity Global Hackathon 2026',
-    eventStartTime: '2026-10-15T09:00',
-    eventEndTime: '2026-10-16T17:00',
-    timezone: '(UTC+05:30) Indian Standard Time',
-    accentColor: '#a2c9ff',
-    logoUrl: '' 
+    name: '',
+    eventStartTime: '',
+    eventEndTime: '',
+    timezone: '',
+    accentColor: '#0070F3',
+    logoUrl: '',
+    themeMode: 'noir',
+    glassIntensity: 20,
   });
 
+  const [availableTimezones, setAvailableTimezones] = useState<string[]>([]);
+
   const [phases, setPhases] = useState([
-    { id: 1, name: 'Kickoff', durationMinutes: 45, autoTransition: true },
-    { id: 2, name: 'Ideation', durationMinutes: 120, autoTransition: false },
-    { id: 3, name: 'Build', durationMinutes: 1440, autoTransition: false },
+    { id: 1, name: 'Registration & Kickoff', durationMinutes: 60, autoTransition: true },
+    { id: 2, name: 'Hacking Session', durationMinutes: 1440, autoTransition: false },
+    { id: 3, name: 'Submission & Pitch', durationMinutes: 120, autoTransition: false },
   ]);
+
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const formatDateTime = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const tzs = [
+      'UTC', 'Africa/Lagos', 'America/New_York', 'America/Los_Angeles', 'America/Chicago',
+      'America/Sao_Paulo', 'Asia/Dubai', 'Asia/Kolkata', 'Asia/Singapore', 'Asia/Tokyo',
+      'Asia/Shanghai', 'Australia/Sydney', 'Europe/London', 'Europe/Paris', 'Europe/Berlin',
+      'Europe/Moscow', 'Pacific/Auckland'
+    ];
+    setAvailableTimezones(!tzs.includes(userTimezone) ? [userTimezone, ...tzs].sort() : tzs.sort());
+
+    if (!editId) {
+      setFormData(prev => ({
+        ...prev,
+        eventStartTime: formatDateTime(now),
+        eventEndTime: formatDateTime(tomorrow),
+        timezone: userTimezone
+      }));
+    } else {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${editId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && !data.error) {
+            setFormData({
+              name: data.name,
+              eventStartTime: data.eventStartTime,
+              eventEndTime: data.eventEndTime,
+              timezone: data.timezone,
+              accentColor: data.branding?.accentColor || '#0070F3',
+              logoUrl: data.branding?.logoUrl || '',
+              themeMode: data.branding?.themeMode || 'noir',
+              glassIntensity: data.branding?.glassIntensity || 20,
+            });
+            if (data.phases) setPhases(data.phases.map((p: any, i: number) => ({ ...p, id: p._id || i })));
+          }
+          setIsLoadingData(false);
+        })
+        .catch(() => setIsLoadingData(false));
+    }
+  }, [editId]);
+
+  const totalPhaseMinutes = useMemo(() => phases.reduce((acc, p) => acc + (p.durationMinutes || 0), 0), [phases]);
+  
+  const scheduledMinutes = useMemo(() => {
+    if (!formData.eventStartTime || !formData.eventEndTime) return 0;
+    const start = new Date(formData.eventStartTime).getTime();
+    const end = new Date(formData.eventEndTime).getTime();
+    return Math.max(0, Math.floor((end - start) / 60000));
+  }, [formData.eventStartTime, formData.eventEndTime]);
+
+  const formatDuration = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  };
+
+  const autoPopulatePhases = () => {
+    if (scheduledMinutes <= 0) {
+      alert("Please set event start and end times first.");
+      return;
+    }
+
+    const kickoff = Math.min(120, Math.floor(scheduledMinutes * 0.05));
+    const pitch = Math.min(240, Math.floor(scheduledMinutes * 0.10));
+    const hack = scheduledMinutes - kickoff - pitch;
+
+    setPhases([
+      { id: Date.now(), name: 'Kickoff & Team Matching', durationMinutes: kickoff || 60, autoTransition: true },
+      { id: Date.now() + 1, name: 'Hacking Period', durationMinutes: hack || 1440, autoTransition: false },
+      { id: Date.now() + 2, name: 'Demos & Judging', durationMinutes: pitch || 120, autoTransition: false },
+    ]);
+  };
+
+  const syncDuration = () => {
+    if (phases.length === 0) return;
+    const newPhases = [...phases];
+    // Find the longest phase (usually hacking) and adjust it
+    const hackIdx = newPhases.findIndex(p => p.name.toLowerCase().includes('hack') || p.name.toLowerCase().includes('build')) || 1;
+    const currentOthers = totalPhaseMinutes - (newPhases[hackIdx]?.durationMinutes || 0);
+    const newHackDuration = Math.max(1, scheduledMinutes - currentOthers);
+    newPhases[hackIdx] = { ...newPhases[hackIdx], durationMinutes: newHackDuration };
+    setPhases(newPhases);
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5000000) { 
-        alert("Image is too large. Please select an image under 5MB.");
+      if (file.size > 1000000) {
+        alert("Image too large (>1MB)");
         return;
       }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, logoUrl: reader.result as string });
-      };
+      reader.onloadend = () => setFormData({ ...formData, logoUrl: reader.result as string });
       reader.readAsDataURL(file);
     }
   };
 
-  const handleDeploy = async () => {
-    setIsDeploying(true);
+  const handleAction = async (isDraft = false) => {
+    if (isDraft) setIsSavingDraft(true);
+    else setIsDeploying(true);
+
     try {
       const payload = {
         name: formData.name,
@@ -50,247 +152,540 @@ export default function FlowPage() {
         eventStartTime: formData.eventStartTime,
         eventEndTime: formData.eventEndTime,
         timezone: formData.timezone,
-        branding: { accentColor: formData.accentColor, logoUrl: formData.logoUrl },
-        phases: phases
+        branding: { 
+          accentColor: formData.accentColor, 
+          logoUrl: formData.logoUrl,
+          themeMode: formData.themeMode,
+          glassIntensity: formData.glassIntensity
+        },
+        phases: phases,
+        status: editId ? undefined : (isDraft ? 'DRAFT' : 'RUNNING')
       };
-      
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hackathons`, {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
+
+      const url = editId
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons/${editId}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/hackathons`;
+
+      const res = await fetch(url, {
+        method: editId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server rejected the payload. The image might still be too large, or the backend is offline.");
-      }
-
       const data = await res.json();
-      
       if (res.ok) {
-        setGeneratedRoom({ id: data.roomId, secret: session?.user?.email || 'N/A' });
-        await update({ activeRoomId: data.roomId });
+        if (editId) {
+          router.push('/dashboard');
+        } else {
+          setGeneratedRoom({ id: data.roomId, secret: session?.user?.email || 'N/A' });
+          if (!isDraft) await update({ activeRoomId: data.roomId });
+          setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        }
       } else {
-        alert(`Deployment failed: ${data.error}`);
+        alert(`Failed: ${data.error}`);
       }
     } catch (error: any) {
-      console.error(error);
       alert(`System Error: ${error.message}`);
     } finally {
       setIsDeploying(false);
-    } 
+      setIsSavingDraft(false);
+    }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    alert("Copied to clipboard!");
+  const onDragStart = (index: number) => {
+    setDraggedIndex(index);
   };
+
+  const onDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newPhases = [...phases];
+    const draggedItem = newPhases[draggedIndex];
+    newPhases.splice(draggedIndex, 1);
+    newPhases.splice(index, 0, draggedItem);
+    setDraggedIndex(index);
+    setPhases(newPhases);
+  };
+
+  const onDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  if (isLoadingData) return (
+    <div className="h-96 flex flex-col items-center justify-center gap-4">
+      <Loader2 className="animate-spin" size={32} style={{ color: '#FF2E9A' }} />
+      <p className="font-medium animate-pulse uppercase tracking-[0.2em] text-[10px]" style={{ color: '#6B7280' }}>Initializing Builder...</p>
+    </div>
+  );
 
   return (
-    <div className="max-w-6xl mx-auto pb-12">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Flow Creation & Setup</h1>
-        <p className="text-[#8B949E]">Engineer your hackathon's temporal architecture and visual identity.</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* LEFT COLUMN: Parameters & Sequencing */}
-        <div className="lg:col-span-2 space-y-8">
-          
-          <div className="bg-[#161B22] border border-[#30363D] rounded-xl p-8">
-            <h2 className="text-xs font-bold tracking-wider uppercase text-[#4493F8] mb-6 flex items-center gap-2">
-              <Network size={16} /> Global Parameters
-            </h2>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Hackathon Name</label>
-                <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 px-4 text-white outline-none focus:border-[#4493F8] transition-colors text-sm" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Start Time</label>
-                  <input type="datetime-local" value={formData.eventStartTime} onChange={e => setFormData({...formData, eventStartTime: e.target.value})} className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 px-4 text-white outline-none focus:border-[#4493F8] text-sm [color-scheme:dark]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">End Time</label>
-                  <input type="datetime-local" value={formData.eventEndTime} onChange={e => setFormData({...formData, eventEndTime: e.target.value})} className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 px-4 text-white outline-none focus:border-[#4493F8] text-sm [color-scheme:dark]" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Timezone</label>
-                <select value={formData.timezone} onChange={e => setFormData({...formData, timezone: e.target.value})} className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 px-4 text-white outline-none focus:border-[#4493F8] text-sm">
-                  <option>(UTC+05:30) Indian Standard Time</option>
-                  <option>(UTC-08:00) Pacific Time (US & Canada)</option>
-                  <option>(UTC-05:00) Eastern Time (US & Canada)</option>
-                  <option>(UTC+00:00) Greenwich Mean Time</option>
-                </select>
-              </div>
-            </div>
+    <div className="max-w-7xl mx-auto pb-24 stagger-in">
+      {/* Top Navigation */}
+      {/* <div className="mb-12 flex items-center justify-between">
+        <Link href="/dashboard" className="group flex items-center gap-2 text-slate-500 hover:text-white transition-all">
+          <div className="p-2 rounded-full group-hover:bg-white/5 transition-all">
+            <ArrowLeft size={18} />
           </div>
-
-          <div className="bg-[#161B22] border border-[#30363D] rounded-xl p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xs font-bold tracking-wider uppercase text-[#4493F8] flex items-center gap-2">
-                <Network size={16} /> Phase Sequencing
-              </h2>
-              <button onClick={() => setPhases([...phases, { id: Date.now(), name: 'New Phase', durationMinutes: 60, autoTransition: false }])} className="text-[#8B949E] hover:text-white flex items-center gap-1 text-[10px] font-bold uppercase">
-                <Plus size={14} /> Add Custom Phase
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {phases.map((phase, index) => (
-                <div key={phase.id} className="flex items-center gap-4 bg-[#0D1117] border border-[#30363D] p-4 rounded-lg group">
-                  <GripVertical size={16} className="text-[#30363D] cursor-grab" />
-                  
-                  <div className="flex-1">
-                    <p className="text-[9px] text-[#8B949E] font-bold tracking-widest uppercase mb-1">Phase {String(index + 1).padStart(2, '0')}</p>
-                    <input type="text" value={phase.name} onChange={(e) => setPhases(phases.map(p => p.id === phase.id ? { ...p, name: e.target.value } : p))} className="bg-transparent border-none text-white font-bold outline-none w-full" />
-                  </div>
-
-                  <div className="w-24">
-                    <p className="text-[9px] text-[#8B949E] font-bold tracking-widest uppercase mb-1">Duration</p>
-                    <div className="flex items-center gap-2">
-                      <input type="number" value={phase.durationMinutes} onChange={(e) => setPhases(phases.map(p => p.id === phase.id ? { ...p, durationMinutes: parseInt(e.target.value)||0 } : p))} className="w-12 bg-[#161B22] border border-[#30363D] rounded px-2 py-1 text-white text-xs font-mono text-center outline-none" />
-                      <span className="text-xs text-[#8B949E] font-mono">m</span>
-                    </div>
-                  </div>
-
-                  <div className="w-32 flex flex-col items-end border-l border-[#30363D] pl-4">
-                    <p className="text-[9px] text-[#8B949E] font-bold tracking-widest uppercase mb-2">Auto-Transition</p>
-                    <button onClick={() => setPhases(phases.map(p => p.id === phase.id ? { ...p, autoTransition: !p.autoTransition } : p))} className={`w-8 h-4 rounded-full relative transition-colors ${phase.autoTransition ? 'bg-[#3FB950]' : 'bg-[#30363D]'}`}>
-                      <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all ${phase.autoTransition ? 'right-0.5' : 'left-0.5'}`}></div>
-                    </button>
-                  </div>
-                  
-                  <button onClick={() => setPhases(phases.filter(p => p.id !== phase.id))} className="text-[#8B949E] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2"><Trash2 size={16} /></button>
-                </div>
-              ))}
-            </div>
-            
-            <button onClick={() => setPhases([...phases, { id: Date.now(), name: 'New Phase', durationMinutes: 60, autoTransition: false }])} className="w-full mt-4 py-3 border border-dashed border-[#30363D] rounded-lg text-xs font-bold text-[#8B949E] tracking-wider uppercase hover:border-[#8B949E] hover:text-white transition-colors flex items-center justify-center gap-2">
-              <Plus size={14} /> Insert Phase Here
-            </button>
-          </div>
+          <span className="text-xs font-bold uppercase tracking-widest">Back to Hub</span>
+        </Link>
+        <div className="flex items-center gap-3">
+           <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Builder Mode</span>
         </div>
+      </div> */}
 
-        {/* RIGHT COLUMN: Branding & Deployment */}
-        <div className="space-y-8">
-          
-          <div className="bg-[#161B22] border border-[#30363D] rounded-xl p-8">
-            <h2 className="text-xs font-bold tracking-wider uppercase text-[#3FB950] mb-6 flex items-center gap-2">
-              <Network size={16} /> Custom Branding
-            </h2>
-            
-            <div className="flex gap-6 mb-8">
-              <div>
-                <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Event Identity</label>
-                <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-24 h-24 bg-[#0D1117] border border-[#30363D] border-dashed rounded-lg flex flex-col items-center justify-center text-[#8B949E] cursor-pointer hover:border-[#8B949E] transition-colors overflow-hidden"
-                >
-                   {formData.logoUrl ? (
-                     <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
-                   ) : (
-                     <>
-                      <ImageIcon size={20} className="mb-1" />
-                      <p className="text-[9px] font-bold uppercase tracking-wider mt-1">Upload</p>
-                     </>
-                   )}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className="lg:col-span-8 space-y-12">
+          {/* Header Section */}
+          <div className="relative">
+            <h1 className="text-5xl font-semibold tracking-tight mb-4" style={{ color: '#E6E6E6' }}>
+              {editId ? 'Refining Hackathon' : 'Hackathon Builder'}
+            </h1>
+            <p className="text-lg font-medium max-w-2xl leading-relaxed" style={{ color: '#A0A0A0' }}>
+              Design your hackathon's journey. Set your schedule, define phases, and customize your visual style.
+            </p>
+          </div>
+
+          {/* 1. Configuration Section */}
+          <section className="rounded-[20px] p-10 shadow-2xl space-y-10 relative overflow-hidden" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.06)' }}>
+             <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl" style={{ backgroundColor: 'rgba(255,46,154,0.06)', color: '#FF2E9A' }}>
+                   <Activity size={18} />
                 </div>
-              </div>
-              
-              <div className="flex-1">
-                <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Accent Color</label>
-                <div className="flex gap-2 mb-3">
-                  {/* NEW: Native Color Picker integrated with Hex Input */}
-                  <div className="w-8 h-8 rounded overflow-hidden border border-[#30363D] relative shrink-0">
-                    <input 
-                      type="color" 
-                      value={formData.accentColor} 
-                      onChange={(e) => setFormData({...formData, accentColor: e.target.value})} 
-                      className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer"
-                    />
-                  </div>
+                <h2 className="text-sm font-bold tracking-[0.2em] uppercase" style={{ color: '#E6E6E6' }}>Event Info</h2>
+             </div>
+
+             <div className="grid grid-cols-1 gap-8 relative z-10">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest ml-1" style={{ color: '#6B7280' }}>Hackathon Name</label>
                   <input 
                     type="text" 
-                    value={formData.accentColor} 
-                    onChange={(e) => setFormData({...formData, accentColor: e.target.value})} 
-                    className="flex-1 bg-[#0D1117] border border-[#30363D] rounded-md px-3 text-white font-mono text-xs outline-none focus:border-[#4493F8]" 
-                    placeholder="#a2c9ff"
+                    value={formData.name} 
+                    onChange={e => setFormData({ ...formData, name: e.target.value })} 
+                    placeholder="e.g. Global Hack 2026"
+                    className="w-full rounded-[20px] py-5 px-6 text-xl font-semibold outline-none transition-all placeholder:text-[#6B7280]" 
+                    style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)', color: '#E6E6E6' }}
+                    onFocus={(e) => e.target.style.borderColor = 'rgba(255,46,154,0.3)'}
+                    onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.04)'}
                   />
                 </div>
-                <div className="flex gap-2">
-                  {['#a2c9ff', '#3FB950', '#ff7b72', '#d2a8ff'].map(color => (
-                    <div key={color} onClick={() => setFormData({...formData, accentColor: color})} className="w-6 h-6 rounded cursor-pointer border border-[#30363D] hover:scale-110 transition-transform" style={{ backgroundColor: color }}></div>
-                  ))}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest ml-1 flex items-center gap-2" style={{ color: '#6B7280' }}>
+                       <Calendar size={12} style={{ color: '#FF2E9A' }} /> Starts
+                    </label>
+                    <input 
+                      type="datetime-local" 
+                      value={formData.eventStartTime} 
+                      onChange={e => setFormData({ ...formData, eventStartTime: e.target.value })} 
+                      className="w-full rounded-[20px] py-4 px-6 outline-none text-sm [color-scheme:dark]" 
+                      style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)', color: '#E6E6E6' }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest ml-1 flex items-center gap-2" style={{ color: '#6B7280' }}>
+                       <Calendar size={12} style={{ color: '#F43F5E' }} /> Ends
+                    </label>
+                    <input 
+                      type="datetime-local" 
+                      value={formData.eventEndTime} 
+                      onChange={e => setFormData({ ...formData, eventEndTime: e.target.value })} 
+                      className="w-full rounded-[20px] py-4 px-6 outline-none text-sm [color-scheme:dark]" 
+                      style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)', color: '#E6E6E6' }}
+                    />
+                  </div>
                 </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest ml-1 flex items-center gap-2" style={{ color: '#6B7280' }}>
+                    <Globe size={12} style={{ color: '#CFFF04' }} /> Timezone
+                  </label>
+                  <select 
+                    value={formData.timezone} 
+                    onChange={e => setFormData({ ...formData, timezone: e.target.value })} 
+                    className="w-full rounded-[20px] py-4 px-6 outline-none text-sm appearance-none"
+                    style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)', color: '#E6E6E6' }}
+                  >
+                    {availableTimezones.map(tz => <option key={tz} value={tz} style={{ backgroundColor: '#1C1C1C' }}>{tz}</option>)}
+                  </select>
+                </div>
+             </div>
+          </section>
+
+          {/* 2. Timeline Section */}
+          <section className="space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl" style={{ backgroundColor: 'rgba(16,185,129,0.08)', color: '#10B981' }}>
+                  <Clock size={18} />
+                </div>
+                <h2 className="text-sm font-bold tracking-[0.2em] uppercase" style={{ color: '#E6E6E6' }}>Experience Timeline</h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={autoPopulatePhases}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all"
+                  style={{ backgroundColor: 'rgba(255,46,154,0.06)', border: '1px solid rgba(255,46,154,0.15)', color: '#FF2E9A' }}
+                >
+                  <Wand2 size={12} /> Auto-Fill Timeline
+                </button>
+                <button 
+                  onClick={() => setPhases([...phases, { id: Date.now(), name: 'New Phase', durationMinutes: 60, autoTransition: false }])} 
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.04)', color: '#A0A0A0' }}
+                >
+                  <Plus size={12} /> Add Phase
+                </button>
               </div>
             </div>
 
-            <div className="bg-[#0D1117] border border-[#30363D] rounded-lg p-4 h-32 relative overflow-hidden">
-               <p className="text-[9px] text-[#8B949E] font-bold uppercase tracking-wider mb-2">Live Preview</p>
-               <div className="flex gap-1 absolute right-4 top-4">
-                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: formData.accentColor }}></div>
-                 <div className="w-1.5 h-1.5 rounded-full bg-[#30363D]"></div>
-                 <div className="w-1.5 h-1.5 rounded-full bg-[#30363D]"></div>
-               </div>
-               <div className="flex items-center gap-2 mb-4">
-                 {formData.logoUrl && <img src={formData.logoUrl} className="h-6 object-contain" />}
-                 <div className="w-24 h-2 rounded-full bg-[#30363D]"></div>
-               </div>
-               <div className="w-full h-8 rounded border border-[#30363D] mb-2 px-2 flex items-center">
-                 <div className="w-12 h-1 rounded-full" style={{ backgroundColor: formData.accentColor }}></div>
-               </div>
-            </div>
-          </div>
+            <div className="relative pl-8 space-y-6" style={{ position: 'relative' }}>
+              <div className="absolute left-3 top-2 bottom-2 w-0.5" style={{ background: 'linear-gradient(to bottom, rgba(255,46,154,0.4), rgba(16,185,129,0.3), transparent)' }}></div>
+              {phases.map((phase, index) => (
+                <div 
+                  key={phase.id} 
+                  draggable
+                  onDragStart={() => onDragStart(index)}
+                  onDragOver={(e) => onDragOver(e, index)}
+                  onDragEnd={onDragEnd}
+                  className={`group relative rounded-[20px] p-6 shadow-xl transition-all duration-300 ${draggedIndex === index ? 'opacity-40 scale-95' : 'opacity-100'}`}
+                  style={{ backgroundColor: '#1C1C1C', border: `1px solid ${draggedIndex === index ? 'rgba(255,46,154,0.3)' : 'rgba(255,255,255,0.06)'}` }}
+                >
+                  {/* Timeline Dot */}
+                  <div className="absolute -left-[29px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full z-10" style={{ backgroundColor: '#0F0F10', border: '2px solid #FF2E9A', boxShadow: '0 0 10px rgba(255,46,154,0.5)' }}></div>
+                  
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
+                    {/* Reorder Handle */}
+                    <div className="cursor-grab active:cursor-grabbing p-2 rounded-xl transition-all" style={{ backgroundColor: 'rgba(255,255,255,0.04)', color: '#6B7280' }}>
+                       <GripVertical size={20} />
+                    </div>
 
-          <div className="bg-[#161B22] border border-[#30363D] rounded-xl p-8">
-            <h2 className="text-xs font-bold tracking-wider uppercase text-white mb-4 flex items-center gap-2">
-              <Zap size={16} className="text-[#4493F8]" /> Finalize Engine
+                    <div className="flex-1 w-full space-y-1">
+                      <p className="text-[9px] font-bold tracking-widest uppercase ml-1" style={{ color: '#6B7280' }}>Phase {String(index + 1).padStart(2, '0')}</p>
+                      <input 
+                        type="text" 
+                        value={phase.name} 
+                        onChange={(e) => setPhases(phases.map(p => p.id === phase.id ? { ...p, name: e.target.value } : p))} 
+                        className="bg-transparent border-none text-xl font-bold outline-none w-full transition-colors" 
+                        style={{ color: '#E6E6E6' }}
+                        onFocus={(e) => e.target.style.color = '#FF2E9A'}
+                        onBlur={(e) => e.target.style.color = '#E6E6E6'}
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-8 w-full md:w-auto">
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-bold tracking-widest uppercase text-center md:text-left" style={{ color: '#6B7280' }}>Duration</p>
+                        <div className="flex items-center gap-3 rounded-xl px-4 py-2" style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                          <input 
+                            type="number" 
+                            value={phase.durationMinutes} 
+                            onChange={(e) => setPhases(phases.map(p => p.id === phase.id ? { ...p, durationMinutes: parseInt(e.target.value) || 0 } : p))} 
+                            className="w-12 bg-transparent text-sm font-mono font-bold text-center outline-none" style={{ color: '#E6E6E6' }}
+                          />
+                          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Min</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-bold tracking-widest uppercase text-center md:text-left" style={{ color: '#6B7280' }}>Auto-Next</p>
+                        <button 
+                          onClick={() => setPhases(phases.map(p => p.id === phase.id ? { ...p, autoTransition: !p.autoTransition } : p))} 
+                          className="w-12 h-6 rounded-full relative transition-all duration-300"
+                          style={{ backgroundColor: phase.autoTransition ? '#10B981' : 'rgba(255,255,255,0.08)' }}
+                        >
+                          <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${phase.autoTransition ? 'right-1' : 'left-1'}`}></div>
+                        </button>
+                      </div>
+
+                      <button 
+                        onClick={() => setPhases(phases.filter(p => p.id !== phase.id))} 
+                        className="p-3 hover:text-[#F43F5E] rounded-[20px] transition-all md:opacity-0 md:group-hover:opacity-100"
+                        style={{ color: '#6B7280' }}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              <button 
+                onClick={() => setPhases([...phases, { id: Date.now(), name: 'New Phase', durationMinutes: 60, autoTransition: false }])} 
+                className="w-full py-6 border border-dashed rounded-[20px] text-sm font-bold tracking-[0.2em] uppercase transition-all flex items-center justify-center gap-3 active:scale-[0.99]"
+                style={{ borderColor: 'rgba(255,255,255,0.08)', color: '#6B7280' }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,46,154,0.3)'; e.currentTarget.style.color = '#FF2E9A'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#6B7280'; }}
+              >
+                <Plus size={18} /> Add New Phase
+              </button>
+            </div>
+          </section>
+        </div>
+
+        {/* Sidebar Summary */}
+        <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-12 h-fit">
+          <section className="rounded-[20px] p-8 shadow-2xl space-y-8 overflow-hidden relative" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <h2 className="text-xs font-bold tracking-[0.2em] uppercase flex items-center gap-2" style={{ color: '#A0A0A0' }}>
+               <Activity size={16} style={{ color: '#FF2E9A' }} /> Hackathon Pulse
             </h2>
-            <p className="text-xs text-[#8B949E] mb-6 leading-relaxed">By deploying this flow, you are initializing the hackathon timeline. All participants with the room link will see the active phase and transitions in real-time.</p>
-            
-            <button onClick={handleDeploy} disabled={isDeploying} className="w-full py-4 bg-[#4493F8] text-white rounded-md font-bold text-sm tracking-wider uppercase hover:bg-[#3178C6] transition-colors mb-3 shadow-[0_0_15px_rgba(68,147,248,0.3)] disabled:opacity-50">
-              {isDeploying ? "INITIALIZING..." : `DEPLOY FLOW`}
-            </button>
-            <button className="w-full py-4 bg-transparent border border-[#30363D] text-white rounded-md font-bold text-sm tracking-wider uppercase hover:bg-[#21262D] transition-colors flex items-center justify-center gap-2">
-              <Save size={16} /> Save Draft Structure
-            </button>
 
-            {generatedRoom && (
-              <div className="mt-8 pt-6 border-t border-[#30363D]">
-                <div className="flex items-center gap-2 mb-4 text-[#3FB950]">
-                   <CheckCircle2 size={16} />
-                   <p className="text-xs font-bold tracking-wider uppercase">Engine Deployed Successfully</p>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-[10px] text-[#8B949E] font-bold tracking-widest uppercase mb-1 flex justify-between">
-                      Participant Room <Copy size={12} className="cursor-pointer hover:text-white" onClick={() => copyToClipboard(`.../room/${generatedRoom.id}`)} />
-                    </p>
-                    <div className="bg-[#0D1117] border border-[#30363D] rounded px-3 py-2 text-xs font-mono text-white flex justify-between items-center">
-                      <span>.../room/<span className="text-[#4493F8]">{generatedRoom.id}</span></span>
+            <div className="space-y-6 relative z-10">
+               <div className="p-6 rounded-[20px]" style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="flex justify-between items-end mb-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Scheduled Total</p>
+                  </div>
+                  <p className="text-4xl font-bold" style={{ color: '#E6E6E6' }}>{formatDuration(scheduledMinutes)}</p>
+                  
+                  <div className="mt-6 space-y-2 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div className="flex justify-between items-center">
+                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Phase Allocation</p>
+                      <p className="text-[10px] font-mono font-bold" style={{ color: Math.abs(totalPhaseMinutes - scheduledMinutes) < 1 ? '#10B981' : '#F59E0B' }}>
+                        {formatDuration(totalPhaseMinutes)}
+                      </p>
+                    </div>
+                    <div className="w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                       <div 
+                          className="h-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, (totalPhaseMinutes / scheduledMinutes) * 100)}%`, backgroundColor: Math.abs(totalPhaseMinutes - scheduledMinutes) < 1 ? '#10B981' : '#FF2E9A' }}
+                       ></div>
                     </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-[#8B949E] font-bold tracking-widest uppercase mb-1 flex justify-between">
-                      Organizer Secret <Copy size={12} className="cursor-pointer hover:text-white" onClick={() => copyToClipboard(generatedRoom.secret)} />
-                    </p>
-                    <div className="bg-[#0D1117] border border-[#30363D] rounded px-3 py-2 text-xs font-mono text-[#3FB950] truncate">
-                      {generatedRoom.secret}
+
+                  {Math.abs(totalPhaseMinutes - scheduledMinutes) > 1 && (
+                    <div className="mt-4 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                      <p className="text-[9px] text-amber-500/80 font-medium flex items-center gap-1.5 leading-relaxed">
+                        <AlertTriangle size={12} className="shrink-0" /> 
+                        Timeline Mismatch: Your phases are {formatDuration(Math.abs(totalPhaseMinutes - scheduledMinutes))} {totalPhaseMinutes > scheduledMinutes ? 'over' : 'under'} schedule.
+                      </p>
+                      <button 
+                        onClick={syncDuration}
+                        className="mt-2 w-full py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <RefreshCw size={10} /> Smart Sync Phases
+                      </button>
+                    </div>
+                  )}
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="p-5 rounded-[20px]" style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                     <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#6B7280' }}>Phases</p>
+                     <p className="text-xl font-bold" style={{ color: '#E6E6E6' }}>{phases.length}</p>
+                  </div>
+                  <div className="p-5 rounded-[20px]" style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                     <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#6B7280' }}>Auto-Steps</p>
+                     <p className="text-xl font-bold" style={{ color: '#10B981' }}>{phases.filter(p => p.autoTransition).length}</p>
+                  </div>
+               </div>
+
+               {/* Visual Style Customization */}
+               <div className="space-y-6 pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                     <Palette size={14} style={{ color: '#FF2E9A' }} />
+                     <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#E6E6E6' }}>Visual Identity</p>
+                  </div>
+                  
+                  {/* Logo Upload Card */}
+                  <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+                  <div 
+                    className="rounded-[20px] p-5 flex items-center gap-5 cursor-pointer group transition-all"
+                    style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}
+                    onClick={() => fileInputRef.current?.click()}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(255,46,154,0.2)'}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'}
+                  >
+                    <div 
+                      className="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden shrink-0 transition-all group-hover:scale-105"
+                      style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.06)' }}
+                    >
+                      {formData.logoUrl ? (
+                        <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-contain p-1.5" />
+                      ) : (
+                        <ImageIcon size={20} style={{ color: '#6B7280' }} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold truncate" style={{ color: '#E6E6E6' }}>
+                        {formData.logoUrl ? 'Logo uploaded' : 'Upload event logo'}
+                      </p>
+                      <p className="text-[9px] font-medium mt-0.5" style={{ color: '#6B7280' }}>
+                        {formData.logoUrl ? 'Click to replace • Max 1MB' : 'PNG, JPG, SVG • Max 1MB'}
+                      </p>
+                    </div>
+                    <div className="text-[8px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md shrink-0 transition-colors" style={{ backgroundColor: 'rgba(255,46,154,0.06)', color: '#FF2E9A' }}>
+                      {formData.logoUrl ? 'Replace' : 'Upload'}
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
 
+                  {/* Accent Color Section */}
+                  <div className="space-y-4">
+                    <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Accent Color</p>
+                    
+                    {/* Active Color Display */}
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div 
+                          className="w-12 h-12 rounded-xl shadow-xl cursor-pointer transition-all hover:scale-105"
+                          style={{ backgroundColor: formData.accentColor, border: '1px solid rgba(255,255,255,0.1)', boxShadow: `0 4px 20px ${formData.accentColor}30` }}
+                          onClick={() => document.getElementById('color-picker-input')?.click()}
+                        ></div>
+                        <input 
+                          id="color-picker-input"
+                          type="color" 
+                          value={formData.accentColor}
+                          onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <input 
+                          type="text" 
+                          value={formData.accentColor} 
+                          onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })} 
+                          className="bg-transparent text-sm font-mono font-bold w-full outline-none" 
+                          style={{ color: '#E6E6E6' }}
+                          onFocus={(e) => e.target.style.color = formData.accentColor}
+                          onBlur={(e) => e.target.style.color = '#E6E6E6'}
+                        />
+                        <p className="text-[8px] font-medium mt-0.5" style={{ color: '#6B7280' }}>Click swatch or type hex</p>
+                      </div>
+                    </div>
+
+                    {/* Preset Palettes */}
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-[8px] font-bold uppercase tracking-widest mb-2" style={{ color: '#6B7280' }}>hackTime Brand</p>
+                        <div className="flex gap-2">
+                          {[
+                            { color: '#FF2E9A', name: 'Fuchsia' },
+                            { color: '#5D00FF', name: 'Indigo' },
+                            { color: '#CFFF04', name: 'Lime' },
+                          ].map(c => (
+                            <button
+                              key={c.color}
+                              onClick={() => setFormData({ ...formData, accentColor: c.color })}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-wider transition-all hover:scale-105"
+                              style={{ 
+                                backgroundColor: formData.accentColor === c.color ? `${c.color}15` : 'rgba(255,255,255,0.02)',
+                                border: `1px solid ${formData.accentColor === c.color ? `${c.color}40` : 'rgba(255,255,255,0.04)'}`,
+                                color: formData.accentColor === c.color ? c.color : '#6B7280'
+                              }}
+                            >
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }}></div>
+                              {c.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[8px] font-bold uppercase tracking-widest mb-2" style={{ color: '#6B7280' }}>Extended Palette</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {[
+                            { color: '#10B981', name: 'Emerald' },
+                            { color: '#3B82F6', name: 'Sky' },
+                            { color: '#F43F5E', name: 'Rose' },
+                            { color: '#8B5CF6', name: 'Violet' },
+                            { color: '#F59E0B', name: 'Amber' },
+                            { color: '#06B6D4', name: 'Cyan' },
+                          ].map(c => (
+                            <button
+                              key={c.color}
+                              onClick={() => setFormData({ ...formData, accentColor: c.color })}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-wider transition-all hover:scale-105"
+                              style={{ 
+                                backgroundColor: formData.accentColor === c.color ? `${c.color}15` : 'rgba(255,255,255,0.02)',
+                                border: `1px solid ${formData.accentColor === c.color ? `${c.color}40` : 'rgba(255,255,255,0.04)'}`,
+                                color: formData.accentColor === c.color ? c.color : '#6B7280'
+                              }}
+                            >
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }}></div>
+                              {c.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live Preview Bar */}
+                    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div className="h-2 w-full transition-all duration-500" style={{ background: `linear-gradient(90deg, ${formData.accentColor}, ${formData.accentColor}60, transparent)` }}></div>
+                      <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: 'rgba(15,15,16,0.6)' }}>
+                        <span className="text-[8px] font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Live Preview</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: formData.accentColor, boxShadow: `0 0 6px ${formData.accentColor}` }}></div>
+                          <span className="text-[8px] font-bold uppercase" style={{ color: formData.accentColor }}>Active</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+               </div>
+            </div>
+
+            <div className="pt-8 space-y-4">
+              <button 
+                onClick={() => handleAction(false)} 
+                disabled={isDeploying || isSavingDraft || !formData.name} 
+                className="w-full py-5 rounded-[20px] font-bold text-xs tracking-[0.2em] uppercase transition-all shadow-2xl disabled:opacity-50 flex items-center justify-center gap-3 active:scale-95 group"
+                style={{ backgroundColor: '#CFFF04', color: '#0F0F10' }}
+              >
+                {isDeploying ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} className="group-hover:animate-pulse" />}
+                {isDeploying ? (editId ? 'SAVING...' : 'LAUNCHING...') : (editId ? 'Update Session' : 'Launch Session')}
+              </button>
+              
+              {!editId && (
+                <button 
+                  onClick={() => handleAction(true)} 
+                  disabled={isDeploying || isSavingDraft || !formData.name} 
+                  className="w-full py-5 rounded-[20px] font-bold text-xs tracking-[0.2em] uppercase transition-all flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#A0A0A0' }}
+                >
+                  {isSavingDraft ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                  Save Blueprint
+                </button>
+              )}
+
+              {generatedRoom && (
+                <div ref={resultsRef} className="mt-8 pt-8 animate-in slide-in-from-bottom-8 fade-in duration-700" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="p-6 rounded-[20px] flex flex-col items-center text-center gap-2" style={{ backgroundColor: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', color: '#10B981' }}>
+                     <CheckCircle2 size={24} />
+                     <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Ready for Liftoff</p>
+                  </div>
+                  
+                  <div className="mt-6 space-y-4">
+                    <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-center" style={{ color: '#6B7280' }}>Room ID</p>
+                    <div className="rounded-[20px] px-6 py-4 flex justify-between items-center group" style={{ backgroundColor: 'rgba(15,15,16,0.6)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                       <span className="text-xl font-mono font-bold tracking-widest" style={{ color: '#CFFF04' }}>{generatedRoom.id}</span>
+                       <button onClick={() => navigator.clipboard.writeText(generatedRoom.id)} className="p-2 transition-all hover:text-white" style={{ color: '#6B7280' }}>
+                          <Copy size={16} />
+                       </button>
+                    </div>
+                  </div>
+                  
+                  <Link href="/dashboard" className="block mt-8 text-center text-[10px] font-bold uppercase tracking-[0.3em] hover:text-white transition-all" style={{ color: '#6B7280' }}>
+                    Return to Overview <ChevronRight size={10} className="inline ml-1" />
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function FlowPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex flex-col items-center justify-center gap-4">
+        <Loader2 className="animate-spin" size={32} style={{ color: '#FF2E9A' }} />
+        <p className="font-medium animate-pulse uppercase tracking-[0.2em] text-[10px]" style={{ color: '#6B7280' }}>Initializing Builder...</p>
+      </div>
+    }>
+      <FlowForm />
+    </Suspense>
   );
 }

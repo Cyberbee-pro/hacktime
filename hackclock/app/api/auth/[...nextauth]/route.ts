@@ -1,8 +1,15 @@
 import NextAuth from "next-auth";
+import GitHubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { NextAuthOptions, Session } from "next-auth";
+import { JWT } from "next-auth/jwt";
 
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
+    GitHubProvider({
+      clientId: process.env.GITHUB_ID || "",
+      clientSecret: process.env.GITHUB_SECRET || "",
+    }),
     CredentialsProvider({
       name: "Terminal Credentials",
       credentials: {
@@ -46,28 +53,56 @@ const handler = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user, trigger, session }) {
+      const authToken = token as JWT & { activeRoomId?: string };
+
       if (user) {
-        token.id = user.id;
-        token.name = user.name;
-        token.picture = user.image; 
-        token.activeRoomId = (user as any).activeRoomId;
+        const authUser = user as typeof user & { activeRoomId?: string };
+        authToken.id = user.id;
+        authToken.name = user.name;
+        authToken.picture = user.image; 
+        authToken.activeRoomId = authUser.activeRoomId;
       }
       
       if (trigger === "update" && session) {
-        if (session.name) token.name = session.name;
-        if (session.image) token.picture = session.image;
-        if (session.activeRoomId !== undefined) token.activeRoomId = session.activeRoomId;
+        const updatedSession = session as Session & {
+          name?: string;
+          image?: string;
+          activeRoomId?: string | null;
+        };
+        const updatedUser = updatedSession.user as (Session["user"] & {
+          activeRoomId?: string | null;
+        }) | undefined;
+
+        const nextName = updatedUser?.name ?? updatedSession.name;
+        const nextImage = updatedUser?.image ?? updatedSession.image;
+        const hasRootActiveRoom = Object.prototype.hasOwnProperty.call(updatedSession, "activeRoomId");
+        const nextActiveRoomId = updatedUser?.activeRoomId ?? (hasRootActiveRoom ? updatedSession.activeRoomId : undefined);
+
+        if (nextName) authToken.name = nextName;
+        if (nextImage) authToken.picture = nextImage;
+        if (nextActiveRoomId !== undefined) authToken.activeRoomId = nextActiveRoomId ?? undefined;
       }
       
-      return token;
+      return authToken;
     },
-    async session({ session, token }: any) {
+    async session({ session, token }: { session: Session; token: JWT & { activeRoomId?: string } }) {
       if (session.user) {
-        session.user.name = token.name;
-        session.user.image = token.picture;
-        session.user.activeRoomId = token.activeRoomId;
+        session.user.name = token.name as string;
+        session.user.image = token.picture as string;
+        (session.user as Session["user"] & { activeRoomId?: string }).activeRoomId = token.activeRoomId;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+
+      return `${baseUrl}/dashboard`;
     }
   },
   pages: {
@@ -77,6 +112,8 @@ const handler = NextAuth({
     strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
