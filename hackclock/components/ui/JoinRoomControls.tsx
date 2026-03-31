@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ArrowRight, Loader2 } from "lucide-react";
@@ -12,6 +12,7 @@ interface JoinRoomControlsProps {
   description?: string;
   buttonLabel?: string;
   className?: string;
+  style?: CSSProperties;
   onSuccess?: () => void;
 }
 
@@ -21,6 +22,7 @@ export default function JoinRoomControls({
   description = "Enter a room ID to join the active hackathon terminal.",
   buttonLabel = "Join",
   className = "",
+  style,
   onSuccess,
 }: JoinRoomControlsProps) {
   const router = useRouter();
@@ -83,7 +85,7 @@ export default function JoinRoomControls({
   const form = (
     <form onSubmit={submitJoin} className="space-y-5">
       <div className="space-y-2">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#A0A0A0' }}>
           Room ID
         </p>
         <input
@@ -96,18 +98,22 @@ export default function JoinRoomControls({
           placeholder="EX: AB12CD"
           autoCapitalize="characters"
           autoCorrect="off"
-          className="w-full rounded-2xl border border-white/10 bg-black/20 px-5 py-4 text-sm font-mono tracking-[0.25em] text-white uppercase outline-none transition-all focus:border-blue-500/50 focus:bg-black/40"
+          className="w-full rounded-[20px] px-5 py-4 text-sm font-mono tracking-[0.25em] uppercase outline-none transition-all"
+          style={{ backgroundColor: 'rgba(15,15,16,0.8)', border: '1px solid rgba(255,255,255,0.08)', color: '#E6E6E6' }}
+          onFocus={(e) => e.target.style.borderColor = 'rgba(255,46,154,0.4)'}
+          onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
         />
       </div>
 
       {error && (
-        <p className="text-xs text-rose-400">{error}</p>
+        <p className="text-xs" style={{ color: '#F43F5E' }}>{error}</p>
       )}
 
       <button
         type="submit"
         disabled={isJoining}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white transition-all hover:bg-blue-500 disabled:opacity-60"
+        className="w-full inline-flex items-center justify-center gap-2 rounded-[20px] px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] transition-all disabled:opacity-60"
+        style={{ backgroundColor: '#CFFF04', color: '#0F0F10' }}
       >
         {isJoining ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
         {isJoining ? "Joining..." : buttonLabel}
@@ -120,7 +126,10 @@ export default function JoinRoomControls({
       <>
         <button
           onClick={() => setIsOpen(true)}
-          className={className || "w-full py-3 bg-white/5 border border-white/5 text-slate-300 rounded-xl font-bold text-[10px] hover:bg-white/10 hover:text-white transition-all flex justify-center items-center gap-2 tracking-[0.1em] uppercase shadow-lg active:scale-95"}
+          className={className || "w-full py-3 rounded-xl font-bold text-[10px] transition-all flex justify-center items-center gap-2 tracking-[0.1em] uppercase shadow-lg active:scale-95"}
+          style={style || { backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#A0A0A0' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#E6E6E6'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = style?.backgroundColor as string || 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = style?.color as string || '#A0A0A0'; }}
         >
           {buttonLabel}
         </button>
@@ -131,7 +140,7 @@ export default function JoinRoomControls({
           title={title}
         >
           <div className="space-y-5">
-            <p className="text-sm text-slate-400 leading-relaxed">{description}</p>
+            <p className="text-sm leading-relaxed" style={{ color: '#A0A0A0' }}>{description}</p>
             {form}
           </div>
         </Modal>
@@ -143,10 +152,10 @@ export default function JoinRoomControls({
     <div className={className}>
       <div className="space-y-5">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: '#A0A0A0' }}>
             Join Hackathon
           </p>
-          <p className="text-sm text-slate-400 leading-relaxed">
+          <p className="text-sm leading-relaxed" style={{ color: '#A0A0A0' }}>
             Enter a room ID to connect this terminal instantly.
           </p>
         </div>

@@ -64,14 +64,21 @@ export const authOptions: NextAuthOptions = {
       }
       
       if (trigger === "update" && session) {
-        const updatedSession = session as Session;
-        const updatedUser = updatedSession.user as (Session["user"] & {
-          activeRoomId?: string;
-        }) | undefined;
+        // Handle both flat format: update({ activeRoomId }) and nested: update({ user: { activeRoomId } })
+        const flatSession = session as Record<string, unknown>;
+        const nestedUser = (session as Session)?.user as (Session["user"] & { activeRoomId?: string }) | undefined;
 
-        if (updatedUser?.name) authToken.name = updatedUser.name;
-        if (updatedUser?.image) authToken.picture = updatedUser.image;
-        if (updatedUser?.activeRoomId !== undefined) authToken.activeRoomId = updatedUser.activeRoomId;
+        // Check flat format first (from update({ activeRoomId: null }))
+        if ('activeRoomId' in flatSession) {
+          authToken.activeRoomId = flatSession.activeRoomId as string | undefined;
+        } else if (nestedUser?.activeRoomId !== undefined) {
+          authToken.activeRoomId = nestedUser.activeRoomId;
+        }
+
+        if (nestedUser?.name) authToken.name = nestedUser.name;
+        if (nestedUser?.image) authToken.picture = nestedUser.image;
+        if (flatSession.name) authToken.name = flatSession.name as string;
+        if (flatSession.image) authToken.picture = flatSession.image as string;
       }
       
       return authToken;

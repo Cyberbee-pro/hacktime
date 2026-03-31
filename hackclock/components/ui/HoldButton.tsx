@@ -58,16 +58,16 @@ export default function HoldButton({
     };
   }, []);
 
-  const variantStyles = {
-    danger: 'text-red-500 border-red-900/50 hover:bg-red-950/30',
-    warning: 'text-yellow-500 border-yellow-900/50 hover:bg-yellow-950/30',
-    default: 'text-[#8B949E] border-[#30363D] hover:bg-[#30363D]/30'
+  const variantStyles: Record<string, React.CSSProperties> = {
+    danger: { color: '#F43F5E', borderColor: 'rgba(244,63,94,0.2)' },
+    warning: { color: '#F59E0B', borderColor: 'rgba(245,158,11,0.2)' },
+    default: { color: '#A0A0A0', borderColor: 'rgba(255,255,255,0.06)' },
   };
 
-  const progressColors = {
-    danger: 'bg-red-500',
-    warning: 'bg-yellow-500',
-    default: 'bg-[#4493F8]'
+  const progressColors: Record<string, string> = {
+    danger: '#F43F5E',
+    warning: '#F59E0B',
+    default: '#FF2E9A',
   };
 
   return (
@@ -77,7 +77,8 @@ export default function HoldButton({
       onMouseLeave={stopHolding}
       onTouchStart={startHolding}
       onTouchEnd={stopHolding}
-      className={`relative overflow-hidden border rounded-md p-2 transition-all active:scale-[0.97] group select-none ${variantStyles[variant]} ${className}`}
+      className={`relative overflow-hidden border rounded-[20px] p-2 transition-all active:scale-[0.97] group select-none ${className}`}
+      style={variantStyles[variant]}
       title={`Hold to ${label}`}
     >
       <div className="relative z-10 flex items-center justify-center gap-2">
@@ -87,11 +88,10 @@ export default function HoldButton({
       
       {/* Progress Overlay */}
       <div 
-        className={`absolute bottom-0 left-0 h-full opacity-20 transition-all ease-linear ${progressColors[variant]}`}
-        style={{ width: `${progress}%` }}
+        className="absolute bottom-0 left-0 h-full opacity-20 transition-all ease-linear"
+        style={{ width: `${progress}%`, backgroundColor: progressColors[variant] }}
       />
       
-      {/* Background fill for progress indicator */}
       {isHolding && (
         <div className="absolute inset-0 bg-black/20 pointer-events-none" />
       )}

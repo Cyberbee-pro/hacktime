@@ -43,7 +43,7 @@ const updateActiveRoom = async (req, res) => {
     const updatedUser = await User.findOneAndUpdate(
       { email }, 
       { activeRoomId: roomId || null }, 
-      { new: true }
+      { returnDocument: 'after' }
     );
     res.status(200).json({ activeRoomId: updatedUser.activeRoomId });
   } catch (err) { 
