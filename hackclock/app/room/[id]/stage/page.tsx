@@ -249,10 +249,10 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
           <span className="text-[10px] md:text-sm font-bold tracking-[0.1em] md:tracking-[0.2em] uppercase truncate" style={{ color: '#E6E6E6' }}>{eventData.announcement || "SYSTEM NOMINAL"}</span>
         </div>
         
-        <div className="flex-1 flex items-center justify-end px-4 md:px-8">
-           <div className="flex items-center gap-2 md:gap-3 px-4 md:px-5 py-2 md:py-2.5 rounded-md" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <Clock size={14} className="md:size-[16px]" style={{ color: '#FF2E9A' }} />
-              <span className="text-xs md:text-sm font-mono tracking-[0.2em]" style={{ color: '#E6E6E6' }}>{realTime}</span>
+        <div className="flex-1 flex items-center justify-end pr-3 pl-4 md:pr-10 md:pl-8">
+           <div className="flex items-center gap-2.5 md:gap-3.5 px-4 md:px-6 py-2.5 md:py-3 rounded-md" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <Clock size={15} className="md:size-[18px]" style={{ color: '#FF2E9A' }} />
+              <span className="text-sm md:text-base font-mono tracking-[0.22em]" style={{ color: '#E6E6E6' }}>{realTime}</span>
            </div>
         </div>
       </footer>
