@@ -13,11 +13,12 @@ interface HackathonFlow {
   roomId: string;
   name: string;
   status: 'DRAFT' | 'RUNNING' | 'PAUSED' | 'COMPLETED';
-  currentPhaseIndex: number;
-  phases: Array<{ name: string; durationMinutes: number }>;
+  currentPhaseIndex?: number;
+  phases?: Array<{ name: string; durationMinutes: number }>;
   branding?: { accentColor?: string; logoUrl?: string };
   participants?: Array<{ teamName: string }>;
   updatedAt: string;
+  error?: string;
 }
 
 interface Participant {
@@ -26,6 +27,7 @@ interface Participant {
 
 export default function DashboardPage() {
   const { data: session, update } = useSession();
+  const lastClearedRoomRef = useRef<string | null>(null);
   const activeRoomId = (session?.user as { activeRoomId?: string })?.activeRoomId;
   const userEmail = session?.user?.email;
 
@@ -134,8 +136,8 @@ export default function DashboardPage() {
       });
       mutateAll();
       if (roomId === activeRoomId) {
-        mutateActive();
         await update({ activeRoomId: null });
+        mutateActive();
       }
     } catch { alert("System Error: Deletion failed."); }
   };
@@ -423,7 +425,7 @@ export default function DashboardPage() {
                       <span className="text-sm font-medium truncate group-hover:text-white transition-colors" style={{ color: '#A0A0A0' }}>{p.teamName}</span>
                     </div>
                   ))}
-                  {(!activeEvent.participants || activeEvent.participants.length === 0) && (
+                  {(!activeControlEvent.participants || activeControlEvent.participants.length === 0) && (
                     <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
                       <Monitor size={32} className="mb-2" style={{ color: '#6B7280' }} />
                       <p className="text-[11px] font-medium" style={{ color: '#6B7280' }}>Listening for nodes...</p>

@@ -23,7 +23,7 @@ export default async function ClockInitialPage() {
         <Sidebar />
       </div>
 
-      <main className="relative flex-1 flex items-center justify-center p-6 md:p-10 stagger-in">
+      <main className="relative flex-1 flex items-start md:items-center justify-center overflow-y-auto p-4 sm:p-6 md:p-10 stagger-in">
         {/* Background Glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] blur-[120px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(93,0,255,0.08) 0%, rgba(255,46,154,0.04) 40%, transparent 70%)' }} />
 
@@ -40,11 +40,11 @@ export default async function ClockInitialPage() {
             No active hackathon timeline detected. Initialize a sequence from the command center to activate the global terminal.
           </p>
           
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <JoinRoomControls />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <Link 
               href="/dashboard" 
               className="px-8 py-4 rounded-[20px] font-bold text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"

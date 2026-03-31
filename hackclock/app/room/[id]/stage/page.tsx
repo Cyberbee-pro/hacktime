@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { Terminal, Megaphone, Clock, X, History } from 'lucide-react';
@@ -18,6 +18,7 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
+  const announcementDurationRef = useRef(10);
 
   useEffect(() => {
     params.then(p => setRoomId(p.id));
@@ -49,17 +50,12 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
   }, []);
 
   useEffect(() => {
-    if (!eventData) return;
+    if (!eventData || !roomId) return;
 
     if (eventData.announcementTimestamp && eventData.announcementTimestamp !== lastAnnouncementTime) {
       if (eventData.announcement) {
         const timeout = setTimeout(() => {
-          setHistory(prev => {
-            if (prev.includes(eventData.announcement)) return prev;
-            const newHistory = [eventData.announcement, ...prev].slice(0, 10);
-            localStorage.setItem(`stage_history_${roomId}`, JSON.stringify(newHistory));
-            return newHistory;
-          });
+          setLastAnnouncementTime(currentTS);
         }, 0);
         return () => clearTimeout(timeout);
       }
@@ -71,22 +67,46 @@ export default function StageMode({ params }: { params: Promise<{ id: string }> 
         setLastAnnouncementTime(ts);
         setIsInitialLoad(false);
       }, 0);
-      return;
+      return () => clearTimeout(timeout);
     }
 
-    if (eventData.announcementTimestamp && eventData.announcementTimestamp !== lastAnnouncementTime) {
-      setTimeout(() => setLastAnnouncementTime(eventData.announcementTimestamp), 0);
+    // When a new announcement arrives (timestamp changed)
+    if (currentTS && currentTS !== lastAnnouncementTime) {
+      const timestampTimeout = setTimeout(() => {
+        setLastAnnouncementTime(currentTS);
+      }, 0);
+
       if (eventData.announcement) {
+        // Add to history
+        const historyTimeout = setTimeout(() => {
+          setHistory(prev => {
+            const newHistory = [eventData.announcement, ...prev.filter(h => h !== eventData.announcement)].slice(0, 10);
+            localStorage.setItem(`stage_history_${roomId}`, JSON.stringify(newHistory));
+            return newHistory;
+          });
+        }, 0);
+
+        // Show overlay (auto-dismiss handled by separate useEffect)
+        announcementDurationRef.current = eventData.announcementDuration || 10;
         const announcementTimeout = setTimeout(() => setShowAnnouncement(true), 0);
-        const durationMs = (eventData.announcementDuration || 10) * 1000;
-        const timer = setTimeout(() => setShowAnnouncement(false), durationMs);
+
         return () => {
+          clearTimeout(timestampTimeout);
+          clearTimeout(historyTimeout);
           clearTimeout(announcementTimeout);
-          clearTimeout(timer);
         };
       }
+
+      return () => clearTimeout(timestampTimeout);
     }
   }, [eventData, isInitialLoad, lastAnnouncementTime, roomId]);
+
+  // Auto-dismiss announcement after duration (separate effect so SWR re-fetches don't clear the timer)
+  useEffect(() => {
+    if (!showAnnouncement) return;
+    const timer = setTimeout(() => setShowAnnouncement(false), announcementDurationRef.current * 1000);
+    return () => clearTimeout(timer);
+  }, [showAnnouncement]);
 
   useEffect(() => {
     if (!eventData) return;

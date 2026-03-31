@@ -32,7 +32,7 @@ export default async function StageHubPage() {
           No active presentation flow detected. Link a stage endpoint from the command center to activate the immersive broadcast view.
         </p>
         
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
           <Link 
             href="/dashboard" 
             className="px-8 py-4 rounded-[20px] font-bold text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
