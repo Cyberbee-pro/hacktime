@@ -4,6 +4,11 @@ This folder contains the Next.js app for hackTime. It powers the organizer dashb
 
 For the full product overview and combined setup instructions, see the root [README](/data/programing/GitHub/HackClock/hacktime/README.md).
 
+## Live Deployment
+
+- Experimental: `https://hackclock.vercel.app/`
+- Production: `https://hacktime.vercel.app/`
+
 ## Run Locally
 
 Install dependencies:
@@ -26,8 +31,6 @@ Start the app:
 ```bash
 npm run dev
 ```
-
-Open `http://localhost:3000`.
 
 ## Main Routes
 

@@ -26,6 +26,11 @@ hackTime is a hackathon control room for organizers, stage screens, and particip
 - Stage standby or active stage view: `/stage` and `/room/<ROOM_ID>/stage`
 - Participant clock view: `/room/<ROOM_ID>/clock`
 
+## Live Deployment
+
+- Experimental: `https://hackclock.vercel.app/`
+- Production: `https://hackclock.vercel.app/`
+
 ## Local Setup
 
 hackTime is split into two apps:
@@ -81,13 +86,18 @@ cd hackclock
 npm run dev
 ```
 
-The web app runs at `http://localhost:3000`.
+For the live app, use:
+
+- Experimental: `https://hackclock.vercel.app/`
+- Production: `https://hacktime.vercel.app/`
 
 ## How To Use hackTime
 
 ### For organizers
 
-1. Open `http://localhost:3000/login`.
+1. Open a deployed login page:
+   Experimental: `https://hackclock.vercel.app/login`
+   Production: `https://hacktime.vercel.app/login`
 2. Create an account or sign in.
 3. Go to `/flow` and create your hackathon.
 4. Add your event name, dates, timezone, branding, and phases.
@@ -96,7 +106,9 @@ The web app runs at `http://localhost:3000`.
 
 ### For participants
 
-1. Open `http://localhost:3000/login`.
+1. Open a deployed login page:
+   Experimental: `https://hackclock.vercel.app/login`
+   Production: `https://hacktime.vercel.app/login`
 2. Choose `GUEST`.
 3. Enter a team name and the room ID.
 4. Join the room to open the live clock view.
