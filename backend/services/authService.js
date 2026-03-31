@@ -41,7 +41,7 @@ const updateUserProfile = async (email, newName, newProfilePic) => {
   const updatedUser = await User.findOneAndUpdate(
     { email }, 
     { name: newName, profilePic: newProfilePic }, 
-    { new: true } 
+    { returnDocument: 'after' } 
   );
   
   if (!updatedUser) throw new Error('User not found.');

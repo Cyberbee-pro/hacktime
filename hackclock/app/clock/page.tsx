@@ -18,7 +18,7 @@ export default async function ClockInitialPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0A0A0B] text-slate-200">
+    <div className="flex min-h-screen" style={{ backgroundColor: '#0F0F10', color: '#E6E6E6' }}>
       <div className="hidden lg:block w-72 shrink-0">
         <Sidebar />
       </div>

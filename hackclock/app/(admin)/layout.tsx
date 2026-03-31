@@ -18,16 +18,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-[#0D1117] text-[#E6EDF3]">
+    <div className="flex flex-col lg:flex-row h-screen overflow-hidden" style={{ backgroundColor: '#0F0F10', color: '#E6E6E6' }}>
       {/* Mobile Header */}
-      <header className="lg:hidden h-16 flex justify-between items-center px-6 bg-[#0D1117] border-b border-[#30363D] z-30 shrink-0">
+      <header className="lg:hidden h-16 flex justify-between items-center px-6 z-30 shrink-0" style={{ backgroundColor: '#0F0F10', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="p-2 -ml-2 text-[#8B949E] hover:text-white transition-colors"
+          className="p-2 -ml-2 transition-colors hover:text-white"
+          style={{ color: '#A0A0A0' }}
         >
           {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
-        <h2 className="text-lg font-bold tracking-tight">HackClock</h2>
+        <h2 className="text-lg font-bold tracking-tight" style={{ color: '#E6E6E6' }}>hackTime</h2>
         <div className="w-8" /> {/* Spacer */}
       </header>
 
@@ -49,19 +50,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Desktop Header */}
-        <header className="hidden lg:flex h-16 justify-between items-center px-8 bg-[#0D1117] border-b border-[#30363D] shrink-0">
-          <h2 className="text-lg font-bold">HackClock</h2>
-          <div className="flex items-center gap-4 text-[#8B949E]">
+        <header className="hidden lg:flex h-16 justify-between items-center px-8 shrink-0" style={{ backgroundColor: '#0F0F10', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <h2 className="text-lg font-bold" style={{ color: '#E6E6E6' }}>hackTime</h2>
+          <div className="flex items-center gap-4" style={{ color: '#A0A0A0' }}>
 
             <Link href="/profile" className="flex items-center gap-3 cursor-pointer group">
-              <span className="text-xs font-mono uppercase text-[#3FB950] group-hover:text-[#4493F8] transition-colors">
+              <span className="text-xs font-mono uppercase group-hover:text-[#FF2E9A] transition-colors" style={{ color: '#CFFF04' }}>
                 {session?.user?.name || 'ADMIN'}
               </span>
-              <div className="w-8 h-8 rounded-full bg-[#1F2937] flex items-center justify-center text-white border border-[#30363D] overflow-hidden group-hover:border-[#4493F8] transition-colors">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden transition-colors" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.06)' }}>
                 {session?.user?.image ? (
                   <img src={session.user.image} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <User size={16} />
+                  <User size={16} style={{ color: '#E6E6E6' }} />
                 )}
               </div>
             </Link>

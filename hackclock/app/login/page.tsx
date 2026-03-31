@@ -124,26 +124,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D1117] text-[#E6EDF3] flex flex-col relative overflow-hidden">
+    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ backgroundColor: '#0F0F10', color: '#E6E6E6' }}>
       
-      <div className="absolute left-4 top-32 text-[10px] text-[#30363D] tracking-[0.3em] uppercase rotate-180" style={{ writingMode: 'vertical-rl' }}>
+      {/* Ambient glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(93,0,255,0.08) 0%, rgba(255,46,154,0.04) 40%, transparent 70%)' }} />
+
+      {/* Side decorations */}
+      <div className="absolute left-4 top-32 text-[10px] tracking-[0.3em] uppercase rotate-180" style={{ writingMode: 'vertical-rl', color: '#6B7280' }}>
         SYS_SECURE_AUTH_LAYER // ACTIVE
       </div>
-      <div className="absolute right-4 bottom-32 text-[10px] text-[#30363D] tracking-[0.3em] uppercase" style={{ writingMode: 'vertical-rl' }}>
+      <div className="absolute right-4 bottom-32 text-[10px] tracking-[0.3em] uppercase" style={{ writingMode: 'vertical-rl', color: '#6B7280' }}>
         ENCRYPTION_MODE // AES_256_GCM
       </div>
 
-      <header className="h-16 flex justify-between items-center px-8 border-b border-[#30363D] bg-[#161B22]/50">
+      <header className="h-16 flex justify-between items-center px-8 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(28,28,28,0.5)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-6 h-6 bg-[#4493F8] rounded flex items-center justify-center text-[#0D1117]">
-             <Clock size={14} strokeWidth={3} />
+          <div className="w-6 h-6 rounded flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #5D00FF, #FF2E9A)' }}>
+             <Clock size={14} strokeWidth={3} className="text-white" />
           </div>
-          <h2 className="text-lg font-bold tracking-tight">GitCity Noir</h2>
+          <h2 className="text-lg font-bold tracking-tight" style={{ color: '#E6E6E6' }}>hackTime</h2>
         </div>
-        <div className="flex items-center gap-6 text-sm text-[#8B949E] font-medium">
+        <div className="flex items-center gap-6 text-sm font-medium" style={{ color: '#A0A0A0' }}>
           <span className="cursor-pointer hover:text-white transition">Docs</span>
           <span className="cursor-pointer hover:text-white transition">Support</span>
-          <button className="bg-[#4493F8] text-white px-4 py-1.5 rounded hover:bg-[#3178C6] transition font-semibold">
+          <button className="text-black px-4 py-1.5 rounded font-semibold transition hover:opacity-90" style={{ backgroundColor: '#CFFF04' }}>
             Join Platform
           </button>
         </div>
@@ -152,22 +156,22 @@ export default function LoginPage() {
       <main className="flex-1 flex flex-col items-center justify-center p-4 z-10">
         
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 bg-[#21262D] rounded-xl flex items-center justify-center mb-4 border border-[#30363D] shadow-lg">
-            <Clock size={24} className="text-[#4493F8]" />
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 border shadow-lg" style={{ backgroundColor: '#1C1C1C', borderColor: 'rgba(255,255,255,0.06)' }}>
+            <Clock size={24} style={{ color: '#FF2E9A' }} />
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-white mb-2">HackClock</h1>
-          <p className="text-[10px] text-[#8B949E] font-bold tracking-[0.2em] uppercase">Terminal Session Authentication</p>
+          <h1 className="text-3xl font-black tracking-tight mb-2" style={{ color: '#E6E6E6' }}>hackTime</h1>
+          <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: '#A0A0A0' }}>Terminal Session Authentication</p>
         </div>
 
-        <div className="w-full max-w-md bg-[#161B22] border border-[#30363D] rounded-xl shadow-2xl overflow-hidden transition-all duration-300">
+        <div className="w-full max-w-md rounded-xl shadow-2xl overflow-hidden transition-all duration-300" style={{ backgroundColor: '#1C1C1C', border: '1px solid rgba(255,255,255,0.06)' }}>
           
           {error && (
-            <div className="bg-[#2D1A1E] border-b border-red-900 p-3 text-center">
-               <p className="text-xs text-red-500 font-bold tracking-wider uppercase animate-pulse">{error}</p>
+            <div className="border-b p-3 text-center" style={{ backgroundColor: 'rgba(244,63,94,0.08)', borderColor: 'rgba(244,63,94,0.2)' }}>
+               <p className="text-xs font-bold tracking-wider uppercase animate-pulse" style={{ color: '#F43F5E' }}>{error}</p>
             </div>
           )}
 
-          <div className="flex border-b border-[#30363D] bg-[#0D1117]">
+          <div className="flex border-b" style={{ borderColor: 'rgba(255,255,255,0.06)', backgroundColor: '#0F0F10' }}>
             {['LOG IN', 'CREATE', 'GUEST'].map((tab) => (
               <button
                 key={tab}
@@ -178,11 +182,15 @@ export default function LoginPage() {
                   setConfirmPassword('');
                   setError('');
                 }}
-                className={`flex-1 py-4 text-xs font-bold tracking-wider uppercase transition-colors ${
+                className={`flex-1 py-4 text-xs font-bold tracking-wider uppercase transition-colors border-t-2 ${
                   activeTab === tab 
-                    ? 'text-[#4493F8] bg-[#161B22] border-t-2 border-[#4493F8]' 
-                    : 'text-[#8B949E] border-t-2 border-transparent hover:bg-[#161B22]/50 hover:text-white'
+                    ? '' 
+                    : 'hover:bg-[#1C1C1C]/50 hover:text-white'
                 }`}
+                style={activeTab === tab 
+                  ? { color: '#FF2E9A', backgroundColor: '#1C1C1C', borderColor: '#FF2E9A' }
+                  : { color: '#A0A0A0', borderColor: 'transparent' }
+                }
               >
                 {tab}
               </button>
@@ -194,27 +202,30 @@ export default function LoginPage() {
             {activeTab === 'GUEST' && (
               <>
                 <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                  <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Identity // Team Name</label>
+                  <label className="block text-[10px] font-bold mb-2 uppercase tracking-wider" style={{ color: '#A0A0A0' }}>Identity // Team Name</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Users size={16} className="text-[#8B949E]" />
+                      <Users size={16} style={{ color: '#A0A0A0' }} />
                     </div>
                     <input 
                       type="text" 
                       value={teamName}
                       onChange={(e) => setTeamName(e.target.value)}
                       placeholder="e.g. The Syntax Sorcerers"
-                      className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 pl-10 pr-4 text-white placeholder-[#484F58] focus:outline-none focus:border-[#4493F8] transition-colors font-mono text-sm"
+                      className="w-full rounded-md py-3 pl-10 pr-4 placeholder-[#6B7280] focus:outline-none transition-colors font-mono text-sm"
+                      style={{ backgroundColor: '#0F0F10', border: '1px solid rgba(255,255,255,0.06)', color: '#E6E6E6' }}
+                      onFocus={(e) => e.target.style.borderColor = 'rgba(255,46,154,0.4)'}
+                      onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.06)'}
                       required={activeTab === 'GUEST'}
                     />
                   </div>
                 </div>
 
                 <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                  <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Target // Room ID</label>
+                  <label className="block text-[10px] font-bold mb-2 uppercase tracking-wider" style={{ color: '#A0A0A0' }}>Target // Room ID</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Hash size={16} className="text-[#8B949E]" />
+                      <Hash size={16} style={{ color: '#A0A0A0' }} />
                     </div>
                     <input 
                       type="text" 
@@ -222,7 +233,10 @@ export default function LoginPage() {
                       onChange={(e) => setRoomId(e.target.value.toUpperCase())}
                       maxLength={6}
                       placeholder="AA3892"
-                      className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 pl-10 pr-4 text-white placeholder-[#484F58] focus:outline-none focus:border-[#4493F8] transition-colors font-mono text-sm uppercase tracking-widest"
+                      className="w-full rounded-md py-3 pl-10 pr-4 placeholder-[#6B7280] focus:outline-none transition-colors font-mono text-sm uppercase tracking-widest"
+                      style={{ backgroundColor: '#0F0F10', border: '1px solid rgba(255,255,255,0.06)', color: '#E6E6E6' }}
+                      onFocus={(e) => e.target.style.borderColor = 'rgba(255,46,154,0.4)'}
+                      onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.06)'}
                       required={activeTab === 'GUEST'}
                     />
                   </div>
@@ -236,17 +250,18 @@ export default function LoginPage() {
                 {activeTab === 'CREATE' && (
                   <>
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                      <label className="block text-[10px] text-[#8B949E] font-bold mb-3 uppercase tracking-wider">Identity // Avatar Selection</label>
+                      <label className="block text-[10px] font-bold mb-3 uppercase tracking-wider" style={{ color: '#A0A0A0' }}>Identity // Avatar Selection</label>
                       <div className="flex gap-3 justify-between">
                         {PRESET_AVATARS.map((avatar, index) => (
                           <div 
                             key={index}
                             onClick={() => setSelectedAvatar(avatar)}
-                            className={`w-12 h-12 rounded-lg cursor-pointer flex items-center justify-center bg-[#21262D] overflow-hidden transition-all duration-200 border-2 ${
-                              selectedAvatar === avatar 
-                                ? 'border-[#4493F8] shadow-[0_0_10px_rgba(68,147,248,0.3)]' 
-                                : 'border-[#30363D] hover:border-[#8B949E]'
-                            }`}
+                            className="w-12 h-12 rounded-lg cursor-pointer flex items-center justify-center overflow-hidden transition-all duration-200 border-2"
+                            style={{
+                              backgroundColor: '#232323',
+                              borderColor: selectedAvatar === avatar ? '#FF2E9A' : 'rgba(255,255,255,0.06)',
+                              boxShadow: selectedAvatar === avatar ? '0 0 10px rgba(255,46,154,0.3)' : 'none'
+                            }}
                           >
                             <img 
                               src={avatar} 
@@ -257,24 +272,27 @@ export default function LoginPage() {
                                 (e.target as HTMLImageElement).parentElement?.classList.add('fallback-icon');
                               }}
                             />
-                            <ImageIcon size={20} className="text-[#8B949E] absolute -z-10" />
+                            <ImageIcon size={20} className="absolute -z-10" style={{ color: '#A0A0A0' }} />
                           </div>
                         ))}
                       </div>
                     </div>
 
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                      <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Identity // Organizer Name</label>
+                      <label className="block text-[10px] font-bold mb-2 uppercase tracking-wider" style={{ color: '#A0A0A0' }}>Identity // Organizer Name</label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <User size={16} className="text-[#8B949E]" />
+                          <User size={16} style={{ color: '#A0A0A0' }} />
                         </div>
                         <input 
                           type="text" 
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder="e.g. Alex Chen"
-                          className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 pl-10 pr-4 text-white placeholder-[#484F58] focus:outline-none focus:border-[#4493F8] transition-colors font-mono text-sm"
+                          className="w-full rounded-md py-3 pl-10 pr-4 placeholder-[#6B7280] focus:outline-none transition-colors font-mono text-sm"
+                          style={{ backgroundColor: '#0F0F10', border: '1px solid rgba(255,255,255,0.06)', color: '#E6E6E6' }}
+                          onFocus={(e) => e.target.style.borderColor = 'rgba(255,46,154,0.4)'}
+                          onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.06)'}
                           required={activeTab === 'CREATE'}
                         />
                       </div>
@@ -283,17 +301,20 @@ export default function LoginPage() {
                 )}
 
                 <div>
-                  <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Identity // Email</label>
+                  <label className="block text-[10px] font-bold mb-2 uppercase tracking-wider" style={{ color: '#A0A0A0' }}>Identity // Email</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <AtSign size={16} className="text-[#8B949E]" />
+                      <AtSign size={16} style={{ color: '#A0A0A0' }} />
                     </div>
                     <input 
                       type="email" 
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="architect@gitcity.noir"
-                      className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 pl-10 pr-4 text-white placeholder-[#484F58] focus:outline-none focus:border-[#4493F8] transition-colors font-mono text-sm"
+                      placeholder="architect@hacktime.dev"
+                      className="w-full rounded-md py-3 pl-10 pr-4 placeholder-[#6B7280] focus:outline-none transition-colors font-mono text-sm"
+                      style={{ backgroundColor: '#0F0F10', border: '1px solid rgba(255,255,255,0.06)', color: '#E6E6E6' }}
+                      onFocus={(e) => e.target.style.borderColor = 'rgba(255,46,154,0.4)'}
+                      onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.06)'}
                       required={(activeTab as string) !== 'GUEST'}
                     />
                   </div>
@@ -301,21 +322,24 @@ export default function LoginPage() {
 
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="block text-[10px] text-[#8B949E] font-bold uppercase tracking-wider">Security // Passkey</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider" style={{ color: '#A0A0A0' }}>Security // Passkey</label>
                     {activeTab === 'LOG IN' && (
-                      <span className="text-[10px] text-[#4493F8] font-bold uppercase tracking-wider cursor-pointer hover:underline">Forgot Password?</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider cursor-pointer hover:underline" style={{ color: '#FF2E9A' }}>Forgot Password?</span>
                     )}
                   </div>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock size={16} className="text-[#8B949E]" />
+                      <Lock size={16} style={{ color: '#A0A0A0' }} />
                     </div>
                     <input 
                       type="password" 
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 pl-10 pr-4 text-white placeholder-[#484F58] focus:outline-none focus:border-[#4493F8] transition-colors font-mono text-sm tracking-widest"
+                      className="w-full rounded-md py-3 pl-10 pr-4 placeholder-[#6B7280] focus:outline-none transition-colors font-mono text-sm tracking-widest"
+                      style={{ backgroundColor: '#0F0F10', border: '1px solid rgba(255,255,255,0.06)', color: '#E6E6E6' }}
+                      onFocus={(e) => e.target.style.borderColor = 'rgba(255,46,154,0.4)'}
+                      onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.06)'}
                       required={(activeTab as string) !== 'GUEST'}
                     />
                   </div>
@@ -323,17 +347,20 @@ export default function LoginPage() {
 
                 {activeTab === 'CREATE' && (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                    <label className="block text-[10px] text-[#8B949E] font-bold mb-2 uppercase tracking-wider">Security // Confirm Passkey</label>
+                    <label className="block text-[10px] font-bold mb-2 uppercase tracking-wider" style={{ color: '#A0A0A0' }}>Security // Confirm Passkey</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock size={16} className="text-[#8B949E]" />
+                        <Lock size={16} style={{ color: '#A0A0A0' }} />
                       </div>
                       <input 
                         type="password" 
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full bg-[#0D1117] border border-[#30363D] rounded-md py-3 pl-10 pr-4 text-white placeholder-[#484F58] focus:outline-none focus:border-[#4493F8] transition-colors font-mono text-sm tracking-widest"
+                        className="w-full rounded-md py-3 pl-10 pr-4 placeholder-[#6B7280] focus:outline-none transition-colors font-mono text-sm tracking-widest"
+                        style={{ backgroundColor: '#0F0F10', border: '1px solid rgba(255,255,255,0.06)', color: '#E6E6E6' }}
+                        onFocus={(e) => e.target.style.borderColor = 'rgba(255,46,154,0.4)'}
+                        onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.06)'}
                         required={activeTab === 'CREATE'}
                       />
                     </div>
@@ -345,7 +372,12 @@ export default function LoginPage() {
             <button 
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 mt-4 bg-[#4493F8] text-white rounded-md font-bold text-sm hover:bg-[#3178C6] transition-colors flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(68,147,248,0.3)] disabled:opacity-50"
+              className="w-full py-3 mt-4 rounded-md font-bold text-sm transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
+              style={{ 
+                backgroundColor: '#CFFF04', 
+                color: '#0F0F10',
+                boxShadow: '0 0 20px rgba(207,255,4,0.25)'
+              }}
             >
               {isLoading ? "AUTHENTICATING..." : (
                 <>
@@ -359,16 +391,19 @@ export default function LoginPage() {
             {activeTab !== 'GUEST' && (
               <>
                 <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t border-[#30363D]"></div>
-                  <span className="flex-shrink-0 mx-4 text-[10px] text-[#8B949E] font-bold tracking-wider uppercase">Or Authenticate Via</span>
-                  <div className="flex-grow border-t border-[#30363D]"></div>
+                  <div className="flex-grow border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}></div>
+                  <span className="flex-shrink-0 mx-4 text-[10px] font-bold tracking-wider uppercase" style={{ color: '#A0A0A0' }}>Or Authenticate Via</span>
+                  <div className="flex-grow border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}></div>
                 </div>
 
                 <div className="flex gap-4">
                   <button
                     type="button"
                     onClick={() => signIn('github', { callbackUrl: '/dashboard' })}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#0D1117] border border-[#30363D] rounded-md hover:bg-[#21262D] transition-colors text-xs font-bold text-[#8B949E] hover:text-white uppercase tracking-wider"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md transition-colors text-xs font-bold uppercase tracking-wider"
+                    style={{ backgroundColor: '#0F0F10', border: '1px solid rgba(255,255,255,0.06)', color: '#A0A0A0' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#232323'; e.currentTarget.style.color = '#E6E6E6'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#0F0F10'; e.currentTarget.style.color = '#A0A0A0'; }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.02c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A4.8 4.8 0 0 0 8 18v4"></path><path d="M12 18v4"></path></svg>
                     GitHub
@@ -379,14 +414,14 @@ export default function LoginPage() {
           </form>
 
           {activeTab !== 'GUEST' && (
-            <div className="bg-[#0D1117] border-t border-[#30363D] p-4 flex items-center justify-center gap-2 text-[10px] text-[#3FB950] font-bold tracking-wider uppercase">
+            <div className="border-t p-4 flex items-center justify-center gap-2 text-[10px] font-bold tracking-wider uppercase" style={{ backgroundColor: '#0F0F10', borderColor: 'rgba(255,255,255,0.06)', color: '#10B981' }}>
                <ShieldCheck size={14} /> End-to-end encrypted session keys active.
             </div>
           )}
         </div>
 
-        <p className="mt-8 text-[10px] text-[#8B949E] font-mono tracking-widest uppercase">
-          Running V2.4.0-NOIR Stable Build
+        <p className="mt-8 text-[10px] font-mono tracking-widest uppercase" style={{ color: '#6B7280' }}>
+          Running V2.4.0 Stable Build
         </p>
       </main>
 
