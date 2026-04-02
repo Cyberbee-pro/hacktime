@@ -8,8 +8,9 @@ const PhaseSchema = new mongoose.Schema({
 
 const HackathonSchema = new mongoose.Schema({
   name: { type: String, required: true }, 
-  roomId: { type: String, required: true, unique: true }, 
+  roomId: { type: String, required: true, unique: true, index: true }, 
   organizerSecret: { type: String, required: true }, 
+  isDeleted: { type: Boolean, default: false },
   
   eventStartTime: { type: String, default: "" },
   eventEndTime: { type: String, default: "" },
@@ -37,4 +38,7 @@ const HackathonSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-module.exports = mongoose.models.Hackathon || mongoose.model('Hackathon', HackathonSchema);
+const Hackathon = mongoose.models.Hackathon || mongoose.model('Hackathon', HackathonSchema);
+
+module.exports = Hackathon;
+module.exports.HackathonSchema = HackathonSchema;
